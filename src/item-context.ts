@@ -1,15 +1,26 @@
 import {Item} from "./item";
 import items from "./items";
+import {Guid} from './helpers';
 
 export class ItemContext {
-    public items:Array<Item> = null;
+    items:Array<Item>;
 
     constructor() {
+        this.items = [];
         this.LoadItems();
     }
 
     LoadItems() {
-        items.forEach(item => {
+        items.forEach(data => {
+            let item = new Item();
+            item.category = data.category;
+            item.description = data.description;
+            item.lifespan = data.lifespan;
+            item.module = data.module;
+            item.title = data.title;
+            item.volume = data.volume;
+            item.weight = data.weight;
+
             this.AddItem(item);
         })
     }
@@ -18,7 +29,7 @@ export class ItemContext {
         this.items.push(item);
     }
 
-    GetItemByTitle(title:string):Item {
-        return this.items.find(item => item.title === title);
-    }
+    
+
+    
 }

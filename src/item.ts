@@ -1,7 +1,7 @@
-import {inject} from 'aurelia-framework';
-import * as enums from './itemenums';
+import {ItemInterface} from './item-interface';
 
-export interface Item {
+export class Item implements ItemInterface {
+    id:string;
     title:string;
     description:string;
     category:string;
@@ -9,4 +9,26 @@ export interface Item {
     volume:number;
     weight:number;
     module:string;
+
+    constructor() {
+        //TODO need a mapper for this
+        this.id = "";
+        this.title = "";
+        this.description ="";
+        this.category = "";
+        this.lifespan = 0;
+        this.volume = 0;
+        this.weight = 0;
+        this.module = "";
+    }
+    
+    testfunc() {
+        alert("TEST!");
+    }
+
+    use() {
+        debugger;
+        const mod = require('./item-modules/' + this.module);
+
+    }
 }
