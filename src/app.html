@@ -1,0 +1,39 @@
+<template>
+<div>
+  <label>Title</label>
+  </br>
+  <input type="text" value.bind="item.title"/>
+</div>
+<div>
+  <label>Description</label>
+  </br>
+  <input type="text" value.bind="item.description"/>
+</div>
+<div>
+  <label>Category</label>
+  </br>
+    <select value.bind="item.category">
+      <option>choose one...</option>
+      <option repeat.for="category of itemCategories" value.bind="category">
+        ${category}
+      </option>
+    </select>
+</div>
+
+<div>
+  <label>Lifespan (in minutes; 0 for infinite)</label>
+  </br>
+  <input type="text" value.bind="item.lifespan"/>
+</div>
+<div>
+  <label>Volume (in {change this to current system (i.e. quarts, gallons, liters)}</label>
+  </br>
+  <input type="text" value.bind="item.volume"/>
+</div>
+<div>
+  <label>Weight (in {change this to current system (i.e. lbs, kilos)}</label>
+  </br>
+  <input type="text" value.bind="item.volume"/>
+</div>
+
+</template>
