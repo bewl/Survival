@@ -12,15 +12,7 @@ export class ItemContext {
 
     LoadItems() {
         items.forEach(data => {
-            let item = new Item();
-            item.category = data.category;
-            item.description = data.description;
-            item.lifespan = data.lifespan;
-            item.module = data.module;
-            item.title = data.title;
-            item.volume = data.volume;
-            item.weight = data.weight;
-
+            let item = Item.map(data);
             this.AddItem(item);
         })
     }

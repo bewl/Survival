@@ -1,6 +1,6 @@
 import {Aurelia} from 'aurelia-framework'
 import environment from './environment';
-
+import {RegisterItemModules} from './item-module-containers';
 //Configure Bluebird Promises.
 //Note: You may want to use environment-specific configuration.
 (<any>Promise).config({
@@ -13,7 +13,9 @@ export function configure(aurelia: Aurelia) {
   aurelia.use
     .standardConfiguration()
     .feature('resources');
-
+  
+  //register modules
+  RegisterItemModules(aurelia);
   if (environment.debug) {
     aurelia.use.developmentLogging();
   }
