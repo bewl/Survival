@@ -21,15 +21,15 @@ export class App {
   }
 
   AddItem(item) {
-    this.game.player.inventory.AddItem(item);
+    this.game.player.inventory.addItem(item);
   }
 
   RemoveItem(item) {
-    this.game.player.inventory.RemoveItem(item);
+    this.game.player.inventory.removeItem(item);
   }
 
   UseItem(item: Item) {
-    let i = this.game.player.inventory.GetItemById(item.id);
+    let i = this.game.player.inventory.getItemById(item.id);
       i.use();
   }
   //Change out options based on category selected (i.e. Weapon (what ammo type?))

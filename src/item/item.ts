@@ -40,10 +40,6 @@ export class Item implements ItemInterface {
         return item;
     }
 
-    testfunc() {
-        alert("TEST!");
-    }
-
     use() {
         let mod = this.container.get(this.module) as ItemModule;
         mod.use();

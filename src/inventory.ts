@@ -36,11 +36,11 @@ export class Inventory {
         this.volumeCap = 15;
     }
     
-    GetItemById(id:string):Item {
+    getItemById(id:string):Item {
         return this.items.find(item => item.id === id);
     }
 
-    AddItem(item: Item) {
+    addItem(item: Item) {
         this.currentVolume += item.volume;
         this.currentWeight += item.weight;
         //let mod = require('./item-modules/' + item.module);
@@ -52,7 +52,7 @@ export class Inventory {
         //run any 'equip' script associated with item
     }
 
-    RemoveItem(item:Item) {
+    removeItem(item:Item) {
         this.currentVolume -= item.volume;
         this.currentWeight -= item.weight;
 

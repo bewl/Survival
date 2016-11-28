@@ -77,9 +77,6 @@ define('item/item',["require", "exports", 'aurelia-dependency-injection'], funct
             item.weight = data.weight;
             return item;
         };
-        Item.prototype.testfunc = function () {
-            alert("TEST!");
-        };
         Item.prototype.use = function () {
             var mod = this.container.get(this.module);
             mod.use();
@@ -131,17 +128,17 @@ define('inventory',["require", "exports", './item/item', './helpers'], function 
             enumerable: true,
             configurable: true
         });
-        Inventory.prototype.GetItemById = function (id) {
+        Inventory.prototype.getItemById = function (id) {
             return this.items.find(function (item) { return item.id === id; });
         };
-        Inventory.prototype.AddItem = function (item) {
+        Inventory.prototype.addItem = function (item) {
             this.currentVolume += item.volume;
             this.currentWeight += item.weight;
             var i = Object.assign(new item_1.Item(), item);
             i.id = helpers_1.Guid.newGuid();
             this.items.push(i);
         };
-        Inventory.prototype.RemoveItem = function (item) {
+        Inventory.prototype.removeItem = function (item) {
             this.currentVolume -= item.volume;
             this.currentWeight -= item.weight;
             this.items = this.items.filter(function (i) { return i.id !== item.id; });
@@ -169,6 +166,9 @@ define('player',["require", "exports", 'aurelia-framework', './inventory', './he
             this.inventory = inventory;
         }
         Player.prototype.damage = function (part, value) {
+        };
+        Player.prototype.pickUp = function (item) {
+            this.inventory.addItem(item);
         };
         Player = __decorate([
             aurelia_framework_1.inject(inventory_1.Inventory), 
@@ -271,13 +271,13 @@ define('app',["require", "exports", 'aurelia-framework', './game'], function (re
             this.game = game;
         }
         App.prototype.AddItem = function (item) {
-            this.game.player.inventory.AddItem(item);
+            this.game.player.inventory.addItem(item);
         };
         App.prototype.RemoveItem = function (item) {
-            this.game.player.inventory.RemoveItem(item);
+            this.game.player.inventory.removeItem(item);
         };
         App.prototype.UseItem = function (item) {
-            var i = this.game.player.inventory.GetItemById(item.id);
+            var i = this.game.player.inventory.getItemById(item.id);
             i.use();
         };
         App = __decorate([

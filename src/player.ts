@@ -15,5 +15,9 @@ export class Player {
 
     damage(part:string, value:number) {
 
-    } 
+    }
+
+    pickUp(item:Item) {
+        this.inventory.addItem(item);
+    }
 }
