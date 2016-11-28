@@ -34,4 +34,12 @@ export class Health {
         part.value -= value;
         //apply value (create rules as well)
     }
+
+    heal(partId:string, value:number) {
+        //find part
+        let part = this.parts.find(p => p.id === partId);
+
+        part.value += value;
+        //apply value (create rules as well)
+    }
 }

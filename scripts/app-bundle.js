@@ -47,12 +47,14 @@ define('item/item-module',["require", "exports", 'aurelia-framework', '../player
         ItemModule.prototype.use = function () {
             return null;
         };
+        ItemModule.prototype.attack = function () {
+        };
         return ItemModule;
     }());
     exports.ItemModule = ItemModule;
 });
 
-define('item/item',["require", "exports", 'aurelia-dependency-injection'], function (require, exports, aurelia_dependency_injection_1) {
+define('item/item',["require", "exports", 'aurelia-dependency-injection', '../player'], function (require, exports, aurelia_dependency_injection_1, player_1) {
     "use strict";
     var Item = (function () {
         function Item() {
@@ -65,6 +67,7 @@ define('item/item',["require", "exports", 'aurelia-dependency-injection'], funct
             this.volume = 0;
             this.weight = 0;
             this.module = "";
+            this.charges = -1;
         }
         Item.map = function (data) {
             var item = new Item();
@@ -75,11 +78,21 @@ define('item/item',["require", "exports", 'aurelia-dependency-injection'], funct
             item.title = data.title;
             item.volume = data.volume;
             item.weight = data.weight;
+            item.charges = data.charges;
             return item;
         };
         Item.prototype.use = function () {
             var mod = this.container.get(this.module);
             mod.use();
+            if (this.charges !== -1) {
+                if (this.charges > 0) {
+                    if (this.charges === 1) {
+                        var player = this.container.get(player_1.Player);
+                        player.inventory.removeItem(this);
+                    }
+                    this.charges -= 1;
+                }
+            }
         };
         return Item;
     }());
@@ -189,12 +202,13 @@ define('item/data/items',["require", "exports"], function (require, exports) {
             "lifespan": 0,
             "volume": 0.5,
             "weight": 0.5,
-            "module": "hunting-knife"
+            "charges": 1,
+            "module": "bandage"
         },
         {
             "title": "Hunting Knife",
             "description": "This is a description",
-            "category": "WEAPON|TOOL",
+            "category": "WEAPON",
             "lifespan": 0,
             "volume": 0.5,
             "weight": 0.5,
@@ -371,11 +385,12 @@ define('item/modules/hunting-knife',["require", "exports", './knife', 'aurelia-f
     exports.HuntingKnife = HuntingKnife;
 });
 
-define('item/item-module-containers',["require", "exports", 'aurelia-framework', './modules/hunting-knife', './modules/knife'], function (require, exports, aurelia_framework_1, hunting_knife_1, knife_1) {
+define('item/item-module-containers',["require", "exports", 'aurelia-framework', './modules/hunting-knife', './modules/knife', './modules/bandage'], function (require, exports, aurelia_framework_1, hunting_knife_1, knife_1, bandage_1) {
     "use strict";
     function RegisterItemModules() {
         aurelia_framework_1.Container.instance.registerInstance('hunting-knife', new hunting_knife_1.HuntingKnife());
         aurelia_framework_1.Container.instance.registerInstance('knife', new knife_1.Knife());
+        aurelia_framework_1.Container.instance.registerInstance('bandage', new bandage_1.Bandage());
     }
     exports.RegisterItemModules = RegisterItemModules;
 });
@@ -391,7 +406,7 @@ define('main',["require", "exports", './environment', './item/item-module-contai
         aurelia.use
             .standardConfiguration()
             .feature('resources');
-        item_module_containers_1.RegisterItemModules(aurelia);
+        item_module_containers_1.RegisterItemModules();
         if (environment_1.default.debug) {
             aurelia.use.developmentLogging();
         }
@@ -445,10 +460,50 @@ define('health',["require", "exports"], function (require, exports) {
             var part = this.parts.find(function (p) { return p.id === partId; });
             part.value -= value;
         };
+        Health.prototype.heal = function (partId, value) {
+            var part = this.parts.find(function (p) { return p.id === partId; });
+            part.value += value;
+        };
         return Health;
     }());
     exports.Health = Health;
 });
+
+var __extends = (this && this.__extends) || function (d, b) {
+    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
+    function __() { this.constructor = d; }
+    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+};
+define('item/modules/bandage',["require", "exports", '../item-module'], function (require, exports, item_module_1) {
+    "use strict";
+    var Bandage = (function (_super) {
+        __extends(Bandage, _super);
+        function Bandage() {
+            _super.call(this);
+        }
+        Bandage.prototype.use = function () {
+            this.player.health.heal('head', 3);
+        };
+        return Bandage;
+    }(item_module_1.ItemModule));
+    exports.Bandage = Bandage;
+});
+
+
+
+define("item/data/item-stats", [],function(){});
+
+var stats = [
+    {
+        id: "hunting-knife",
+        range: 0,
+        bash: 0,
+        pierce: 6,
+        slash: 2,
+    }
+];
+
+define("item/data/weapon-stats", [],function(){});
 
 define('text!app.html', ['module'], function(module) { module.exports = "<template>\r\n    <h2>Items</h2>\r\n    <ul>\r\n        <li repeat.for=\"item of game.itemContext.items\" click.delegate=\"AddItem(item)\">\r\n            ${item.title}\r\n        </li>\r\n    </ul>\r\n    <h2>Inventory</h2>\r\n    <div style=\"display: inline-block\">\r\n        <ul>\r\n            <li repeat.for=\"item of game.player.inventory.items\">\r\n                <div click.delegate=\"RemoveItem(item)\">${item.title}</div>\r\n                <div click.delegate=\"UseItem(item)\">Use</div>\r\n            </li>\r\n        </ul>\r\n    </div>\r\n    <div style=\"display: inline-block\">\r\n        <div>Weight: ${game.player.inventory.currentWeight}/${game.player.inventory.weightCap}</div>\r\n        <div>Volume: ${game.player.inventory.currentVolume}/${game.player.inventory.volumeCap}</div>\r\n    </div>\r\n\r\n    <h2>Health</h2>\r\n    <div style=\"display: inline-block\">\r\n        <ul>\r\n            <li repeat.for=\"part of game.player.health.parts\" click.delegate=\"RemoveItem(item)\">\r\n                ${item.title}\r\n                <div>${part.description}:${part.value}</div>\r\n            </li>\r\n        </ul>\r\n    </div>\r\n</template>"; });
 define('text!designer/item-designer.html', ['module'], function(module) { module.exports = "<template>\r\n\r\n<div>\r\n    \r\n</div>\r\n\r\n</template>"; });

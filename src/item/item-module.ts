@@ -14,5 +14,8 @@ export class ItemModule {
     use() {
         return null;
     }
-    
+
+    attack() {
+
+    }
 }

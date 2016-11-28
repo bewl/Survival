@@ -8,12 +8,13 @@ let items: any = [
         "lifespan": 0,
         "volume": 0.5,
         "weight": 0.5,
-        "module": "hunting-knife"
+        "charges": 1,
+        "module": "bandage"
     },
     {
         "title": "Hunting Knife",
         "description": "This is a description",
-        "category": "WEAPON|TOOL",
+        "category": "WEAPON",
         "lifespan": 0,
         "volume": 0.5,
         "weight": 0.5,

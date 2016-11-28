@@ -15,7 +15,7 @@ export function configure(aurelia: Aurelia) {
     .feature('resources');
   
   //register modules
-  RegisterItemModules(aurelia);
+  RegisterItemModules();
   if (environment.debug) {
     aurelia.use.developmentLogging();
   }
