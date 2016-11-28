@@ -1,5 +1,5 @@
-import {Item} from "./item";
-import items from "./items";
+import {Item} from "./item/item";
+import items from "./item/data/items";
 import {Guid} from './helpers';
 
 export class ItemContext {

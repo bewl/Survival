@@ -3,7 +3,6 @@ import {ItemModule} from './item-module';
 import {Aurelia, inject} from 'aurelia-framework';
 import {Container} from 'aurelia-dependency-injection';
 
-const huntingKnife = require('./resources/item-modules/hunting-knife');
 export class Item implements ItemInterface {
     id: string;
     title: string;
@@ -46,10 +45,7 @@ export class Item implements ItemInterface {
     }
 
     use() {
-        debugger;
         let mod = this.container.get(this.module) as ItemModule;
-
-        mod.Use();
-
+        mod.use();
     }
 }

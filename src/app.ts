@@ -1,6 +1,6 @@
 import { inject } from 'aurelia-framework';
 import * as ItemEnums from './itemenums';
-import { Item } from './item';
+import { Item } from './item/item';
 import * as helpers from './helpers'
 import {Game} from './game';
 
@@ -29,7 +29,6 @@ export class App {
   }
 
   UseItem(item: Item) {
-    debugger;
     let i = this.game.player.inventory.GetItemById(item.id);
       i.use();
   }

@@ -6,7 +6,13 @@ export class HuntingKnife extends Knife {
     constructor() {
         super();
     }
-    Wield() {
-        super.Wield();
+    wield() {
+        super.wield();
+        
+    }
+
+    use() {
+        super.use();
+        this.player.health.damage("head", 14);
     }
 }

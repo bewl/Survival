@@ -1,5 +1,5 @@
 import {inject} from 'aurelia-framework';
-import {Item} from './item';
+import {Item} from './item/item';
 import {Guid} from './helpers';
 
 export class Inventory {

@@ -1,6 +1,6 @@
 import {Aurelia} from 'aurelia-framework'
 import environment from './environment';
-import {RegisterItemModules} from './item-module-containers';
+import {RegisterItemModules} from './item/item-module-containers';
 //Configure Bluebird Promises.
 //Note: You may want to use environment-specific configuration.
 (<any>Promise).config({

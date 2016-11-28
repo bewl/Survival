@@ -1,4 +1,4 @@
-import {ItemModule} from '../../item-module';
+import {ItemModule} from '../item-module';
 import {noView} from 'aurelia-framework'; 
 
 @noView
@@ -7,7 +7,7 @@ export class Knife extends ItemModule {
         super();
     }
 
-    Wield(){
+    wield(){
 
     }
 }

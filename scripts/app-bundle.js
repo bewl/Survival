@@ -12,13 +12,48 @@ define('itemenums',["require", "exports"], function (require, exports) {
     var ItemCategories = exports.ItemCategories;
 });
 
-define('item-interface',["require", "exports"], function (require, exports) {
+define('helpers',["require", "exports"], function (require, exports) {
+    "use strict";
+    function GetEnumElements(e) {
+        return Object.keys(e).map(function (a) { return e[a]; }).filter(function (a) { return typeof a === 'string'; });
+    }
+    exports.GetEnumElements = GetEnumElements;
+    var Guid = (function () {
+        function Guid() {
+        }
+        Guid.newGuid = function () {
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+                var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+                return v.toString(16);
+            });
+        };
+        return Guid;
+    }());
+    exports.Guid = Guid;
+});
+
+define('item/item-interface',["require", "exports"], function (require, exports) {
     "use strict";
 });
 
-define('item',["require", "exports", 'aurelia-dependency-injection'], function (require, exports, aurelia_dependency_injection_1) {
+define('item/item-module',["require", "exports", 'aurelia-framework', '../player'], function (require, exports, aurelia_framework_1, player_1) {
     "use strict";
-    var huntingKnife = require('./resources/item-modules/hunting-knife');
+    var ItemModule = (function () {
+        function ItemModule() {
+            this.player = aurelia_framework_1.Container.instance.get(player_1.Player);
+        }
+        ItemModule.prototype.wield = function () {
+        };
+        ItemModule.prototype.use = function () {
+            return null;
+        };
+        return ItemModule;
+    }());
+    exports.ItemModule = ItemModule;
+});
+
+define('item/item',["require", "exports", 'aurelia-dependency-injection'], function (require, exports, aurelia_dependency_injection_1) {
+    "use strict";
     var Item = (function () {
         function Item() {
             this.container = aurelia_dependency_injection_1.Container.instance;
@@ -46,36 +81,15 @@ define('item',["require", "exports", 'aurelia-dependency-injection'], function (
             alert("TEST!");
         };
         Item.prototype.use = function () {
-            debugger;
             var mod = this.container.get(this.module);
-            mod.Use();
+            mod.use();
         };
         return Item;
     }());
     exports.Item = Item;
 });
 
-define('helpers',["require", "exports"], function (require, exports) {
-    "use strict";
-    function GetEnumElements(e) {
-        return Object.keys(e).map(function (a) { return e[a]; }).filter(function (a) { return typeof a === 'string'; });
-    }
-    exports.GetEnumElements = GetEnumElements;
-    var Guid = (function () {
-        function Guid() {
-        }
-        Guid.newGuid = function () {
-            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
-                var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
-                return v.toString(16);
-            });
-        };
-        return Guid;
-    }());
-    exports.Guid = Guid;
-});
-
-define('inventory',["require", "exports", './item', './helpers'], function (require, exports, item_1, helpers_1) {
+define('inventory',["require", "exports", './item/item', './helpers'], function (require, exports, item_1, helpers_1) {
     "use strict";
     var Inventory = (function () {
         function Inventory() {
@@ -146,15 +160,15 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
-define('player',["require", "exports", 'aurelia-framework', './inventory'], function (require, exports, aurelia_framework_1, inventory_1) {
+define('player',["require", "exports", 'aurelia-framework', './inventory', './health'], function (require, exports, aurelia_framework_1, inventory_1, health_1) {
     "use strict";
     var Player = (function () {
         function Player(inventory) {
             this.inventory = null;
+            this.health = new health_1.Health();
             this.inventory = inventory;
         }
-        Player.prototype.AddItem = function (item) {
-            this.inventory.AddItem(item);
+        Player.prototype.damage = function (part, value) {
         };
         Player = __decorate([
             aurelia_framework_1.inject(inventory_1.Inventory), 
@@ -165,7 +179,7 @@ define('player',["require", "exports", 'aurelia-framework', './inventory'], func
     exports.Player = Player;
 });
 
-define('items',["require", "exports"], function (require, exports) {
+define('item/data/items',["require", "exports"], function (require, exports) {
     "use strict";
     var items = [
         {
@@ -191,7 +205,7 @@ define('items',["require", "exports"], function (require, exports) {
     exports.default = items;
 });
 
-define('item-context',["require", "exports", "./item", "./items"], function (require, exports, item_1, items_1) {
+define('item-context',["require", "exports", "./item/item", "./item/data/items"], function (require, exports, item_1, items_1) {
     "use strict";
     var ItemContext = (function () {
         function ItemContext() {
@@ -263,7 +277,6 @@ define('app',["require", "exports", 'aurelia-framework', './game'], function (re
             this.game.player.inventory.RemoveItem(item);
         };
         App.prototype.UseItem = function (item) {
-            debugger;
             var i = this.game.player.inventory.GetItemById(item.id);
             i.use();
         };
@@ -289,6 +302,11 @@ define('environment',["require", "exports"], function (require, exports) {
 
 define("input", [],function(){});
 
+var __extends = (this && this.__extends) || function (d, b) {
+    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
+    function __() { this.constructor = d; }
+    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+};
 var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
     if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
@@ -298,26 +316,71 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
-define('item-module',["require", "exports", 'aurelia-framework', './player'], function (require, exports, aurelia_framework_1, player_1) {
+define('item/modules/knife',["require", "exports", '../item-module', 'aurelia-framework'], function (require, exports, item_module_1, aurelia_framework_1) {
     "use strict";
-    var ItemModule = (function () {
-        function ItemModule() {
+    var Knife = (function (_super) {
+        __extends(Knife, _super);
+        function Knife() {
+            _super.call(this);
         }
-        ItemModule.prototype.Wield = function () {
+        Knife.prototype.wield = function () {
         };
-        ItemModule.prototype.Use = function () {
-            return null;
-        };
-        ItemModule = __decorate([
-            aurelia_framework_1.inject(player_1.Player), 
+        Knife = __decorate([
+            aurelia_framework_1.noView, 
             __metadata('design:paramtypes', [])
-        ], ItemModule);
-        return ItemModule;
-    }());
-    exports.ItemModule = ItemModule;
+        ], Knife);
+        return Knife;
+    }(item_module_1.ItemModule));
+    exports.Knife = Knife;
 });
 
-define('main',["require", "exports", './environment', './item-module-containers'], function (require, exports, environment_1, item_module_containers_1) {
+var __extends = (this && this.__extends) || function (d, b) {
+    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
+    function __() { this.constructor = d; }
+    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+};
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+define('item/modules/hunting-knife',["require", "exports", './knife', 'aurelia-framework'], function (require, exports, knife_1, aurelia_framework_1) {
+    "use strict";
+    var HuntingKnife = (function (_super) {
+        __extends(HuntingKnife, _super);
+        function HuntingKnife() {
+            _super.call(this);
+        }
+        HuntingKnife.prototype.wield = function () {
+            _super.prototype.wield.call(this);
+        };
+        HuntingKnife.prototype.use = function () {
+            _super.prototype.use.call(this);
+            this.player.health.damage("head", 14);
+        };
+        HuntingKnife = __decorate([
+            aurelia_framework_1.noView, 
+            __metadata('design:paramtypes', [])
+        ], HuntingKnife);
+        return HuntingKnife;
+    }(knife_1.Knife));
+    exports.HuntingKnife = HuntingKnife;
+});
+
+define('item/item-module-containers',["require", "exports", 'aurelia-framework', './modules/hunting-knife', './modules/knife'], function (require, exports, aurelia_framework_1, hunting_knife_1, knife_1) {
+    "use strict";
+    function RegisterItemModules() {
+        aurelia_framework_1.Container.instance.registerInstance('hunting-knife', new hunting_knife_1.HuntingKnife());
+        aurelia_framework_1.Container.instance.registerInstance('knife', new knife_1.Knife());
+    }
+    exports.RegisterItemModules = RegisterItemModules;
+});
+
+define('main',["require", "exports", './environment', './item/item-module-containers'], function (require, exports, environment_1, item_module_containers_1) {
     "use strict";
     Promise.config({
         warnings: {
@@ -347,85 +410,46 @@ define("designer/item-designer", [],function(){});
 define('resources/index',["require", "exports"], function (require, exports) {
     "use strict";
     function configure(config) {
-        config.globalResources(['./item-modules/knife']);
     }
     exports.configure = configure;
 });
 
-var __extends = (this && this.__extends) || function (d, b) {
-    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
-    function __() { this.constructor = d; }
-    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-};
-var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
-    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
-    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
-    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
-    return c > 3 && r && Object.defineProperty(target, key, r), r;
-};
-var __metadata = (this && this.__metadata) || function (k, v) {
-    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
-};
-define('resources/item-modules/knife',["require", "exports", '../../item-module', 'aurelia-framework'], function (require, exports, item_module_1, aurelia_framework_1) {
+define('health',["require", "exports"], function (require, exports) {
     "use strict";
-    var Knife = (function (_super) {
-        __extends(Knife, _super);
-        function Knife() {
-            _super.call(this);
+    var Health = (function () {
+        function Health() {
+            this.head = 100;
+            this.torso = 100;
+            this.leftArm = 100;
+            this.rightArm = 100;
+            this.leftHand = 100;
+            this.rightHand = 100;
+            this.leftLeg = 100;
+            this.rightLeg = 100;
+            this.leftFoot = 100;
+            this.rightFoot = 100;
+            this.parts = [
+                { id: 'head', description: 'Head', value: 100 },
+                { id: 'torso', description: 'Torso', value: 100 },
+                { id: 'leftArm', description: 'Left Arm', value: 100 },
+                { id: 'rightArm', description: 'Right Arm', value: 100 },
+                { id: 'leftHand', description: 'Left Hand', value: 100 },
+                { id: 'rightHand', description: 'Right Hand', value: 100 },
+                { id: 'leftLeg', description: 'Left Leg', value: 100 },
+                { id: 'rightLeg', description: 'Right Leg', value: 100 },
+                { id: 'leftFoot', description: 'Left Foot', value: 100 },
+                { id: 'rightFoot', description: 'Right Foot', value: 100 },
+            ];
         }
-        Knife.prototype.Wield = function () {
+        Health.prototype.damage = function (partId, value) {
+            var part = this.parts.find(function (p) { return p.id === partId; });
+            part.value -= value;
         };
-        Knife = __decorate([
-            aurelia_framework_1.noView, 
-            __metadata('design:paramtypes', [])
-        ], Knife);
-        return Knife;
-    }(item_module_1.ItemModule));
-    exports.Knife = Knife;
+        return Health;
+    }());
+    exports.Health = Health;
 });
 
-var __extends = (this && this.__extends) || function (d, b) {
-    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
-    function __() { this.constructor = d; }
-    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-};
-var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
-    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
-    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
-    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
-    return c > 3 && r && Object.defineProperty(target, key, r), r;
-};
-var __metadata = (this && this.__metadata) || function (k, v) {
-    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
-};
-define('resources/item-modules/hunting-knife',["require", "exports", './knife', 'aurelia-framework'], function (require, exports, knife_1, aurelia_framework_1) {
-    "use strict";
-    var HuntingKnife = (function (_super) {
-        __extends(HuntingKnife, _super);
-        function HuntingKnife() {
-            _super.call(this);
-        }
-        HuntingKnife.prototype.Wield = function () {
-            _super.prototype.Wield.call(this);
-        };
-        HuntingKnife = __decorate([
-            aurelia_framework_1.noView, 
-            __metadata('design:paramtypes', [])
-        ], HuntingKnife);
-        return HuntingKnife;
-    }(knife_1.Knife));
-    exports.HuntingKnife = HuntingKnife;
-});
-
-define('item-module-containers',["require", "exports", './resources/item-modules/hunting-knife', './resources/item-modules/knife'], function (require, exports, hunting_knife_1, knife_1) {
-    "use strict";
-    function RegisterItemModules(aurelia) {
-        aurelia.container.registerInstance('hunting-knife', new hunting_knife_1.HuntingKnife());
-        aurelia.container.registerInstance('knife', new knife_1.Knife());
-    }
-    exports.RegisterItemModules = RegisterItemModules;
-});
-
-define('text!app.html', ['module'], function(module) { module.exports = "<template>\r\n    <h2>Items</h2>\r\n    <ul>\r\n        <li repeat.for=\"item of game.itemContext.items\" click.delegate=\"AddItem(item)\">\r\n            ${item.title}\r\n        </li>\r\n    </ul>\r\n    <h2>Inventory</h2>\r\n    <div style=\"display: inline-block\">\r\n        <ul>\r\n            <li repeat.for=\"item of game.player.inventory.items\" click.delegate=\"RemoveItem(item)\">\r\n                ${item.title}\r\n                <div click.delegate=\"UseItem(item)\">Use</div>\r\n            </li>\r\n        </ul>\r\n    </div>\r\n    <div style=\"display: inline-block\">\r\n        <div>Weight: ${game.player.inventory.currentWeight}/${game.player.inventory.weightCap}</div>\r\n        <div>Volume: ${game.player.inventory.currentVolume}/${game.player.inventory.volumeCap}</div>\r\n    </div>\r\n</template>"; });
+define('text!app.html', ['module'], function(module) { module.exports = "<template>\r\n    <h2>Items</h2>\r\n    <ul>\r\n        <li repeat.for=\"item of game.itemContext.items\" click.delegate=\"AddItem(item)\">\r\n            ${item.title}\r\n        </li>\r\n    </ul>\r\n    <h2>Inventory</h2>\r\n    <div style=\"display: inline-block\">\r\n        <ul>\r\n            <li repeat.for=\"item of game.player.inventory.items\">\r\n                <div click.delegate=\"RemoveItem(item)\">${item.title}</div>\r\n                <div click.delegate=\"UseItem(item)\">Use</div>\r\n            </li>\r\n        </ul>\r\n    </div>\r\n    <div style=\"display: inline-block\">\r\n        <div>Weight: ${game.player.inventory.currentWeight}/${game.player.inventory.weightCap}</div>\r\n        <div>Volume: ${game.player.inventory.currentVolume}/${game.player.inventory.volumeCap}</div>\r\n    </div>\r\n\r\n    <h2>Health</h2>\r\n    <div style=\"display: inline-block\">\r\n        <ul>\r\n            <li repeat.for=\"part of game.player.health.parts\" click.delegate=\"RemoveItem(item)\">\r\n                ${item.title}\r\n                <div>${part.description}:${part.value}</div>\r\n            </li>\r\n        </ul>\r\n    </div>\r\n</template>"; });
 define('text!designer/item-designer.html', ['module'], function(module) { module.exports = "<template>\r\n\r\n<div>\r\n    \r\n</div>\r\n\r\n</template>"; });
 //# sourceMappingURL=app-bundle.js.map
