@@ -374,7 +374,7 @@ define('item/modules/hunting-knife',["require", "exports", './knife', 'aurelia-f
         };
         HuntingKnife.prototype.use = function () {
             _super.prototype.use.call(this);
-            this.player.health.damage("head", 14);
+            this.player.health.damage("head", 5);
         };
         HuntingKnife = __decorate([
             aurelia_framework_1.noView, 
