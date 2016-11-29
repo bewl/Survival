@@ -1,6 +1,6 @@
 import {inject} from 'aurelia-framework';
 import {Player} from './player';
-import {ItemContext} from './item-context';
+import {ItemContext} from './item/item-context';
 
 
 @inject(Player, ItemContext)

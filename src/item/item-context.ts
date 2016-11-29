@@ -1,6 +1,7 @@
-import {Item} from "./item/item";
-import items from "./item/data/items";
-import {Guid} from './helpers';
+import {Item} from "./item";
+import items from "./data/items";
+import weaponStats from "./data/weapon-stats";
+import {Guid} from '../helpers';
 
 export class ItemContext {
     items:Array<Item>;
@@ -12,7 +13,8 @@ export class ItemContext {
 
     LoadItems() {
         items.forEach(data => {
-            let item = Item.map(data);
+            let stats = weaponStats.find(s => s.id === data.module);
+            let item = Item.mapItem(data);
             this.AddItem(item);
         })
     }
