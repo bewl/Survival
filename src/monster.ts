@@ -9,5 +9,7 @@ export class Monster extends Player {
         this.player = Container.instance.get(Player) as Player;
     }
 
-    attack(
+    attack() {
+        
+    }
 }
