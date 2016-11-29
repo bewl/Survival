@@ -3,6 +3,7 @@ import { Aurelia, inject } from 'aurelia-framework';
 import { Container } from 'aurelia-dependency-injection';
 import { Player } from '../player';
 import { ItemStats} from './stats/item-stats';
+import { WeaponStats} from './stats/weapon-stats';
 
 export class Item {
     id: string;
@@ -11,7 +12,7 @@ export class Item {
     category: string;
     module: string;
     stats:ItemStats;
-    
+    weaponStats : WeaponStats;
     container: Container;
 
 
@@ -23,7 +24,8 @@ export class Item {
         this.description = "";
         this.category = "";
         this.module = "";
-        this.stats = new ItemStats();
+        this.stats = null;
+        this.weaponStats = null;
     }
 
     static mapItem(data) {
@@ -36,13 +38,24 @@ export class Item {
         return item;
     }
 
-    static mapStats(data) {
+    static mapItemStats(data) {
         let stats = new ItemStats();
         stats.charges = data.charges;
         stats.decay = data.decay;
         stats.volume = data.volume;
         stats.weight = data.weight;
         stats.durability = data.durability;
+
+        return stats;
+    }
+
+    static mapWeaponStats(data) {
+        let stats = new WeaponStats();
+        stats.ammoType = data.ammoType;
+        stats.bash = data.bash;
+        stats.pierce = data.pierce;
+        stats.range = data.range;
+        stats.slash = data.slash;
 
         return stats;
     }

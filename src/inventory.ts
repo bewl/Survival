@@ -41,8 +41,8 @@ export class Inventory {
     }
 
     addItem(item: Item) {
-        this.currentVolume += item.volume;
-        this.currentWeight += item.weight;
+        this.currentVolume += item.stats.volume;
+        this.currentWeight += item.stats.weight;
         //let mod = require('./item-modules/' + item.module);
         let i = Object.assign(new Item(), item);
         i.id = Guid.newGuid();
@@ -53,8 +53,8 @@ export class Inventory {
     }
 
     removeItem(item:Item) {
-        this.currentVolume -= item.volume;
-        this.currentWeight -= item.weight;
+        this.currentVolume -= item.stats.volume;
+        this.currentWeight -= item.stats.weight;
 
         this.items = this.items.filter(i => i.id !== item.id);
 
