@@ -1,5 +1,5 @@
 import {inject} from 'aurelia-framework';
-import {Player} from './player';
+import {Player} from './actor/player';
 import {ItemContext} from './item/item-context';
 import {World} from './world/world';
 

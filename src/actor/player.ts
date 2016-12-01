@@ -1,10 +1,10 @@
 import {inject} from 'aurelia-framework';
-import {Inventory} from './inventory/inventory';
+import {Inventory} from '../inventory/inventory';
 import {Health} from './health';
-import {Item} from './item/item';
+import {Item} from '../item/item';
 import {Monster} from './monster';
-import {Vector} from './helpers';
-import {World} from './world/world';
+import {Vector} from '../helpers';
+import {World} from '../world/world';
 import {Actor} from './actor';
 
 export class Player extends Actor{

@@ -32,10 +32,10 @@ export class Chunk {
                 let value = this.perlin.simplex2((x + this.worldX) / 50, (y + this.worldY) / 50) * 500;
 
                 let tileType = null;
+
                 if (value < 100) {
                     tileType = TileData.find(tile => tile.title === 'grass');
                 }
-
                 if(value >= 100 && value < 200) {
                     tileType = TileData.find(tile => tile.title === 'slope');
                 }
@@ -47,9 +47,6 @@ export class Chunk {
                 }
                 if(value >= 400 && value < 500) {
                     tileType = TileData.find(tile => tile.title === 'ridge');
-                }
-                if(value >= 500 && value < 200) {
-                    tileType = TileData.find(tile => tile.title === 'slope');
                 }
 
                 let tile = new Tile();
