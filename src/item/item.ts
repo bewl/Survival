@@ -1,7 +1,7 @@
 import { ItemModule } from './item-module';
 import { Aurelia, inject } from 'aurelia-framework';
 import { Container } from 'aurelia-dependency-injection';
-import { Player } from '../player';
+import { Player } from '../actor/player';
 import { ItemStats} from './stats/item-stats';
 import { WeaponStats} from './stats/weapon-stats';
 

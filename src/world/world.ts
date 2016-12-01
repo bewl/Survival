@@ -29,7 +29,6 @@ export class World {
         for (var y = 0; y < this.worldSizeX; y++) {
             this.chunks[y] = [];
             for (var x = 0; x < this.worldSizeY; x++) {
-                debugger;
                 this.chunks[y][x] = new Chunk(new Vector(x, y), new Vector(this.chunkSizeX, this.chunkSizeY));
             }
         }

@@ -396,7 +396,7 @@ define('inventory/inventory',["require", "exports", '../item/item', '../helpers'
     exports.Inventory = Inventory;
 });
 
-define('health',["require", "exports"], function (require, exports) {
+define('actor/health',["require", "exports"], function (require, exports) {
     "use strict";
     var Health = (function () {
         function Health() {
@@ -436,12 +436,161 @@ define('health',["require", "exports"], function (require, exports) {
     exports.Health = Health;
 });
 
+define('tile/tile',["require", "exports", '../inventory/inventory'], function (require, exports, inventory_1) {
+    "use strict";
+    var Tile = (function () {
+        function Tile() {
+            this.inventory = new inventory_1.Inventory();
+        }
+        return Tile;
+    }());
+    exports.Tile = Tile;
+});
+
+define('tile/data/tiles',["require", "exports"], function (require, exports) {
+    "use strict";
+    var tiles = [
+        {
+            title: "grass",
+            color: "#DAF7A6",
+            symbol: 176,
+            movementCost: 50,
+        },
+        {
+            title: "slope",
+            color: "#FFC300",
+            symbol: 176,
+            movementCost: 75,
+        },
+        {
+            title: "slope2",
+            color: "#FF5733",
+            symbol: 176,
+            movementCost: 100,
+        },
+        {
+            title: "slope3",
+            color: "#C70039",
+            symbol: 178,
+            movementCost: 150,
+        },
+        {
+            title: "ridge",
+            color: "#900C3F",
+            symbol: 178,
+            movementCost: 75,
+        },
+    ];
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.default = tiles;
+});
+
+define('world/chunk',["require", "exports", 'aurelia-framework', '../tile/tile', '../helpers', '../tile/data/tiles'], function (require, exports, aurelia_framework_1, tile_1, helpers_1, tiles_1) {
+    "use strict";
+    var TileData = tiles_1.default;
+    var Chunk = (function () {
+        function Chunk(position, chunkSize) {
+            this.chunkSizeX = chunkSize.x;
+            this.chunkSizeY = chunkSize.y;
+            this.perlin = aurelia_framework_1.Container.instance.get(helpers_1.Perlin);
+            this.tiles = [];
+            this.worldX = (position.x * this.chunkSizeX) + position.x;
+            this.worldY = (position.y * this.chunkSizeY) + position.y;
+            this.seedChunk();
+        }
+        Chunk.prototype.seedChunk = function () {
+            for (var y = 0; y < this.chunkSizeY; y++) {
+                this.tiles[y] = [];
+                for (var x = 0; x < this.chunkSizeX; x++) {
+                    var value = this.perlin.simplex2((x + this.worldX) / 50, (y + this.worldY) / 50) * 500;
+                    var tileType = null;
+                    if (value < 100) {
+                        tileType = TileData.find(function (tile) { return tile.title === 'grass'; });
+                    }
+                    if (value >= 100 && value < 200) {
+                        tileType = TileData.find(function (tile) { return tile.title === 'slope'; });
+                    }
+                    if (value >= 200 && value < 300) {
+                        tileType = TileData.find(function (tile) { return tile.title === 'slope2'; });
+                    }
+                    if (value >= 300 && value < 400) {
+                        tileType = TileData.find(function (tile) { return tile.title === 'slope3'; });
+                    }
+                    if (value >= 400 && value < 500) {
+                        tileType = TileData.find(function (tile) { return tile.title === 'ridge'; });
+                    }
+                    var tile = new tile_1.Tile();
+                    tile.color = tileType.color;
+                    tile.movementCost = tileType.movementCost;
+                    tile.position = new helpers_1.Vector(x, y);
+                    tile.title = tileType.title;
+                    tile.symbol = String.fromCharCode(tileType.symbol);
+                    this.tiles[y][x] = tile;
+                }
+            }
+        };
+        return Chunk;
+    }());
+    exports.Chunk = Chunk;
+});
+
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+define('world/world',["require", "exports", 'aurelia-framework', './chunk', '../helpers'], function (require, exports, aurelia_framework_1, chunk_1, helpers_1) {
+    "use strict";
+    var World = (function () {
+        function World(perlin) {
+            this.perlin = perlin;
+            this.worldSizeX = 4;
+            this.worldSizeY = 4;
+            this.chunkSizeX = 50;
+            this.chunkSizeY = 38;
+            this.chunks = [];
+            this.seed = new helpers_1.Random(Math.floor(Math.random() * 32000)).nextDouble();
+        }
+        World.prototype.generateWorld = function () {
+            this.perlin.seed(this.seed);
+            for (var y = 0; y < this.worldSizeX; y++) {
+                this.chunks[y] = [];
+                for (var x = 0; x < this.worldSizeY; x++) {
+                    this.chunks[y][x] = new chunk_1.Chunk(new helpers_1.Vector(x, y), new helpers_1.Vector(this.chunkSizeX, this.chunkSizeY));
+                }
+            }
+        };
+        World = __decorate([
+            aurelia_framework_1.inject(helpers_1.Perlin), 
+            __metadata('design:paramtypes', [Object])
+        ], World);
+        return World;
+    }());
+    exports.World = World;
+});
+
+define('actor/actor',["require", "exports", 'aurelia-framework', '../world/world'], function (require, exports, aurelia_framework_1, world_1) {
+    "use strict";
+    var Actor = (function () {
+        function Actor() {
+            this.inventory = null;
+            this.world = aurelia_framework_1.Container.instance.get(world_1.World);
+        }
+        return Actor;
+    }());
+    exports.Actor = Actor;
+});
+
 var __extends = (this && this.__extends) || function (d, b) {
     for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
     function __() { this.constructor = d; }
     d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
 };
-define('monster',["require", "exports", './actor'], function (require, exports, actor_1) {
+define('actor/monster',["require", "exports", './actor'], function (require, exports, actor_1) {
     "use strict";
     var Monster = (function (_super) {
         __extends(Monster, _super);
@@ -460,7 +609,7 @@ var __extends = (this && this.__extends) || function (d, b) {
     function __() { this.constructor = d; }
     d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
 };
-define('player',["require", "exports", './actor'], function (require, exports, actor_1) {
+define('actor/player',["require", "exports", './actor'], function (require, exports, actor_1) {
     "use strict";
     var Player = (function (_super) {
         __extends(Player, _super);
@@ -478,7 +627,7 @@ define('player',["require", "exports", './actor'], function (require, exports, a
     exports.Player = Player;
 });
 
-define('item/item-module',["require", "exports", 'aurelia-framework', '../player'], function (require, exports, aurelia_framework_1, player_1) {
+define('item/item-module',["require", "exports", 'aurelia-framework', '../actor/player'], function (require, exports, aurelia_framework_1, player_1) {
     "use strict";
     var ItemModule = (function () {
         function ItemModule() {
@@ -516,7 +665,7 @@ define('item/stats/weapon-stats',["require", "exports"], function (require, expo
     exports.WeaponStats = WeaponStats;
 });
 
-define('item/item',["require", "exports", 'aurelia-dependency-injection', '../player', './stats/item-stats', './stats/weapon-stats'], function (require, exports, aurelia_dependency_injection_1, player_1, item_stats_1, weapon_stats_1) {
+define('item/item',["require", "exports", 'aurelia-dependency-injection', '../actor/player', './stats/item-stats', './stats/weapon-stats'], function (require, exports, aurelia_dependency_injection_1, player_1, item_stats_1, weapon_stats_1) {
     "use strict";
     var Item = (function () {
         function Item() {
@@ -663,107 +812,6 @@ define('item/item-context',["require", "exports", "./item", "./data/items", "./d
     exports.ItemContext = ItemContext;
 });
 
-define('tile/tile',["require", "exports", '../inventory/inventory'], function (require, exports, inventory_1) {
-    "use strict";
-    var Tile = (function () {
-        function Tile() {
-            this.inventory = new inventory_1.Inventory();
-        }
-        return Tile;
-    }());
-    exports.Tile = Tile;
-});
-
-define('tile/data/tiles',["require", "exports"], function (require, exports) {
-    "use strict";
-    var tiles = [
-        {
-            title: "grass",
-            color: "#DAF7A6",
-            symbol: 176,
-            movementCost: 50,
-        },
-        {
-            title: "slope",
-            color: "#FFC300",
-            symbol: 176,
-            movementCost: 75,
-        },
-        {
-            title: "slope2",
-            color: "#FF5733",
-            symbol: 176,
-            movementCost: 100,
-        },
-        {
-            title: "slope3",
-            color: "#C70039",
-            symbol: 178,
-            movementCost: 150,
-        },
-        {
-            title: "ridge",
-            color: "#900C3F",
-            symbol: 178,
-            movementCost: 75,
-        },
-    ];
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.default = tiles;
-});
-
-define('world/chunk',["require", "exports", 'aurelia-framework', '../tile/tile', '../helpers', '../tile/data/tiles'], function (require, exports, aurelia_framework_1, tile_1, helpers_1, tiles_1) {
-    "use strict";
-    var TileData = tiles_1.default;
-    var Chunk = (function () {
-        function Chunk(x, y) {
-            this.chunkSizeX = 50;
-            this.chunkSizeY = 38;
-            this.perlin = aurelia_framework_1.Container.instance.get(helpers_1.Perlin);
-            this.tiles = [];
-            this.worldX = (x * this.chunkSizeX) + x;
-            this.worldY = (y * this.chunkSizeY) + y;
-            this.seedChunk();
-        }
-        Chunk.prototype.seedChunk = function () {
-            for (var y = 0; y < this.chunkSizeY; y++) {
-                this.tiles[y] = [];
-                for (var x = 0; x < this.chunkSizeX; x++) {
-                    var value = this.perlin.simplex2((x + this.worldX) / 50, (y + this.worldY) / 50) * 500;
-                    var tileType = null;
-                    if (value < 100) {
-                        tileType = TileData.find(function (tile) { return tile.title === 'grass'; });
-                    }
-                    if (value >= 100 && value < 200) {
-                        tileType = TileData.find(function (tile) { return tile.title === 'slope'; });
-                    }
-                    if (value >= 200 && value < 300) {
-                        tileType = TileData.find(function (tile) { return tile.title === 'slope2'; });
-                    }
-                    if (value >= 300 && value < 400) {
-                        tileType = TileData.find(function (tile) { return tile.title === 'slope3'; });
-                    }
-                    if (value >= 400 && value < 500) {
-                        tileType = TileData.find(function (tile) { return tile.title === 'ridge'; });
-                    }
-                    if (value >= 500 && value < 200) {
-                        tileType = TileData.find(function (tile) { return tile.title === 'slope'; });
-                    }
-                    var tile = new tile_1.Tile();
-                    tile.color = tileType.color;
-                    tile.movementCost = tileType.movementCost;
-                    tile.position = new helpers_1.Vector(x, y);
-                    tile.title = tileType.title;
-                    tile.symbol = String.fromCharCode(tileType.symbol);
-                    this.tiles[y][x] = tile;
-                }
-            }
-        };
-        return Chunk;
-    }());
-    exports.Chunk = Chunk;
-});
-
 var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
     if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
@@ -773,47 +821,7 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
-define('world/world',["require", "exports", 'aurelia-framework', './chunk', '../helpers'], function (require, exports, aurelia_framework_1, chunk_1, helpers_1) {
-    "use strict";
-    var World = (function () {
-        function World(perlin) {
-            this.perlin = perlin;
-            this.worldSizeX = 4;
-            this.worldSizeY = 4;
-            this.chunkSizeX = 50;
-            this.chunkSizeY = 38;
-            this.chunks = [];
-            this.seed = new helpers_1.Random(Math.floor(Math.random() * 32000)).nextDouble();
-        }
-        World.prototype.generateWorld = function () {
-            this.perlin.seed(this.seed);
-            for (var y = 0; y < this.worldSizeX; y++) {
-                this.chunks[y] = [];
-                for (var x = 0; x < this.worldSizeY; x++) {
-                    debugger;
-                    this.chunks[y][x] = new chunk_1.Chunk(new helpers_1.Vector(x, y), new helpers_1.Vector(this.chunkSizeX, this.chunkSizeY));
-                }
-            }
-        };
-        World = __decorate([
-            aurelia_framework_1.inject(helpers_1.Perlin), 
-            __metadata('design:paramtypes', [Object])
-        ], World);
-        return World;
-    }());
-    exports.World = World;
-});
-
-var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
-    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
-    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
-    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
-    return c > 3 && r && Object.defineProperty(target, key, r), r;
-};
-var __metadata = (this && this.__metadata) || function (k, v) {
-    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
-};
-define('game',["require", "exports", 'aurelia-framework', './player', './item/item-context', './world/world'], function (require, exports, aurelia_framework_1, player_1, item_context_1, world_1) {
+define('game',["require", "exports", 'aurelia-framework', './actor/player', './item/item-context', './world/world'], function (require, exports, aurelia_framework_1, player_1, item_context_1, world_1) {
     "use strict";
     var Game = (function () {
         function Game(player, world, itemContext) {
@@ -1004,10 +1012,6 @@ define('main',["require", "exports", './environment', './item/item-module-contai
     exports.configure = configure;
 });
 
-
-
-define("designer/item-designer", [],function(){});
-
 define('resources/index',["require", "exports"], function (require, exports) {
     "use strict";
     function configure(config) {
@@ -1015,18 +1019,5 @@ define('resources/index',["require", "exports"], function (require, exports) {
     exports.configure = configure;
 });
 
-define('actor',["require", "exports", 'aurelia-framework', './world/world'], function (require, exports, aurelia_framework_1, world_1) {
-    "use strict";
-    var Actor = (function () {
-        function Actor() {
-            this.inventory = null;
-            this.world = aurelia_framework_1.Container.instance.get(world_1.World);
-        }
-        return Actor;
-    }());
-    exports.Actor = Actor;
-});
-
 define('text!app.html', ['module'], function(module) { module.exports = "<template>\r\n    <div id=\"map\" style=\"background-color:black;\">\r\n        <div repeat.for=\"chunkY of game.world.chunks\">\r\n            <div style=\"display:inline-block;\" repeat.for=\"chunkX of chunkY\">\r\n                <div repeat.for=\"tileY of chunkX.tiles\">\r\n                    <label repeat.for=\"tileX of tileY\" style=\"width:10px; text-align:center;color:${tileX.color}; padding:0 2px 0 2px; font-weight:bold;\">${tileX.symbol}</label>\r\n                </div>\r\n            </div>\r\n        </div>\r\n    </div>\r\n    <h2>Items</h2>\r\n    <ul>\r\n        <li repeat.for=\"item of game.itemContext.items\" click.delegate=\"AddItem(item)\">\r\n            ${item.title}\r\n        </li>\r\n    </ul>\r\n    <h2>Inventory</h2>\r\n    <div style=\"display: inline-block\">\r\n        <ul>\r\n            <li repeat.for=\"item of game.player.inventory.items\">\r\n                <div click.delegate=\"RemoveItem(item)\">${item.title}</div>\r\n                <div click.delegate=\"UseItem(item)\">Use</div>\r\n            </li>\r\n        </ul>\r\n    </div>\r\n    <div style=\"display: inline-block\">\r\n        <div>Weight: ${game.player.inventory.currentWeight}/${game.player.inventory.weightCap}</div>\r\n        <div>Volume: ${game.player.inventory.currentVolume}/${game.player.inventory.volumeCap}</div>\r\n    </div>\r\n\r\n    <h2>Health</h2>\r\n    <div style=\"display: inline-block\">\r\n        <ul>\r\n            <li repeat.for=\"part of game.player.health.parts\" click.delegate=\"RemoveItem(item)\">\r\n                ${item.title}\r\n                <div>${part.description}:${part.value}</div>\r\n            </li>\r\n        </ul>\r\n    </div>\r\n</template>"; });
-define('text!designer/item-designer.html', ['module'], function(module) { module.exports = "<template>\r\n\r\n<div>\r\n    \r\n</div>\r\n\r\n</template>"; });
 //# sourceMappingURL=app-bundle.js.map

@@ -1,5 +1,5 @@
 import {inject, Container} from 'aurelia-framework';
-import {Player} from '../player';
+import {Player} from '../actor/player';
 
 export class ItemModule {
     player:Player;

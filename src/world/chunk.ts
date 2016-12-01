@@ -13,13 +13,13 @@ export class Chunk {
     public chunkSizeY: number;
 
     private perlin: Perlin;
-    constructor(x, y) {
-        this.chunkSizeX = 50;
-        this.chunkSizeY = 38;
+    constructor(position:Vector, chunkSize:Vector) {
+        this.chunkSizeX = chunkSize.x;
+        this.chunkSizeY = chunkSize.y;
         this.perlin = Container.instance.get(Perlin) as Perlin;
         this.tiles = [];
-        this.worldX = (x * this.chunkSizeX) + x;
-        this.worldY = (y * this.chunkSizeY) + y;
+        this.worldX = (position.x * this.chunkSizeX) + position.x;
+        this.worldY = (position.y * this.chunkSizeY) + position.y;
 
         this.seedChunk();
     }
