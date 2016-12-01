@@ -14,5 +14,7 @@ export class Actor {
 
     constructor() {
         this.world = Container.instance.get(World);
+        this.inventory = new Inventory();
+        this.health = new Health();
     }
 }

@@ -7,29 +7,27 @@ const TileData = tiles;
 export class Chunk {
     public tiles: Tile[][];
     public seed: number;
-    public worldX: number;
-    public worldY: number;
-    public chunkSizeX: number;
-    public chunkSizeY: number;
+    public chunkPosition: Vector;
+    public worldPosition: Vector;
+    public chunkSize: Vector;
 
     private perlin: Perlin;
     constructor(position:Vector, chunkSize:Vector) {
-        this.chunkSizeX = chunkSize.x;
-        this.chunkSizeY = chunkSize.y;
+        this.chunkSize = chunkSize;
         this.perlin = Container.instance.get(Perlin) as Perlin;
         this.tiles = [];
-        this.worldX = (position.x * this.chunkSizeX) + position.x;
-        this.worldY = (position.y * this.chunkSizeY) + position.y;
+        this.chunkPosition = position;
+        this.worldPosition = new Vector((position.x * this.chunkSize.x) + position.x, (position.y * this.chunkSize.y) + position.y);
 
         this.seedChunk();
     }
 
     seedChunk() {
-        for (var y = 0; y < this.chunkSizeY; y++) {
+        for (let y = 0; y < this.chunkSize.y; y++) {
             this.tiles[y] = [];
-            for (var x = 0; x < this.chunkSizeX; x++) {
+            for (let x = 0; x < this.chunkSize.x; x++) {
 
-                let value = this.perlin.simplex2((x + this.worldX) / 50, (y + this.worldY) / 50) * 500;
+                let value = this.perlin.simplex2((x + this.worldPosition.x) / 25, (y + this.worldPosition.y) / 25) * 500;
 
                 let tileType = null;
 
@@ -49,11 +47,10 @@ export class Chunk {
                     tileType = TileData.find(tile => tile.title === 'ridge');
                 }
 
-                let tile = new Tile();
+                let tile = new Tile(new Vector(x, y), new Vector(x + this.worldPosition.x, y + this.worldPosition.y));
 
                 tile.color = tileType.color;
                 tile.movementCost = tileType.movementCost;
-                tile.position = new Vector(x, y);
                 tile.title = tileType.title;
                 tile.symbol = String.fromCharCode(tileType.symbol);
                 
