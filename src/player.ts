@@ -1,5 +1,5 @@
 import {inject} from 'aurelia-framework';
-import {Inventory} from './inventory';
+import {Inventory} from './inventory/inventory';
 import {Health} from './health';
 import {Item} from './item/item';
 import {Monster} from './monster';

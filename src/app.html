@@ -1,4 +1,13 @@
 <template>
+    <div id="map" style="background-color:black;">
+        <div repeat.for="chunkY of game.world.chunks">
+            <div repeat.for="chunkX of chunkY">
+                <div repeat.for="tileY of chunkX.tiles">
+                    <label repeat.for="tileX of tileY" style="width:10px; text-align:center;color:${tileX.color}; padding:0 2px 0 2px; font-weight:bold;">${tileX.symbol}</label>
+                </div>
+            </div>
+        </div>
+    </div>
     <h2>Items</h2>
     <ul>
         <li repeat.for="item of game.itemContext.items" click.delegate="AddItem(item)">
