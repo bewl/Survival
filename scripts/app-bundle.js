@@ -441,28 +441,31 @@ var __extends = (this && this.__extends) || function (d, b) {
     function __() { this.constructor = d; }
     d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
 };
-define('monster',["require", "exports", 'aurelia-framework', './player'], function (require, exports, aurelia_framework_1, player_1) {
+define('monster',["require", "exports", './actor'], function (require, exports, actor_1) {
     "use strict";
     var Monster = (function (_super) {
         __extends(Monster, _super);
         function Monster() {
             _super.call(this);
-            this.enemy = aurelia_framework_1.Container.instance.get(player_1.Player);
         }
         Monster.prototype.attack = function () {
         };
         return Monster;
-    }(player_1.Player));
+    }(actor_1.Actor));
     exports.Monster = Monster;
 });
 
-define('player',["require", "exports", './inventory/inventory', './health'], function (require, exports, inventory_1, health_1) {
+var __extends = (this && this.__extends) || function (d, b) {
+    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
+    function __() { this.constructor = d; }
+    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+};
+define('player',["require", "exports", './actor'], function (require, exports, actor_1) {
     "use strict";
-    var Player = (function () {
+    var Player = (function (_super) {
+        __extends(Player, _super);
         function Player() {
-            this.inventory = null;
-            this.health = new health_1.Health();
-            this.inventory = new inventory_1.Inventory();
+            _super.call(this);
             this.enemy = null;
         }
         Player.prototype.pickUp = function (item) {
@@ -471,7 +474,7 @@ define('player',["require", "exports", './inventory/inventory', './health'], fun
         Player.prototype.attack = function () {
         };
         return Player;
-    }());
+    }(actor_1.Actor));
     exports.Player = Player;
 });
 
@@ -709,24 +712,24 @@ define('tile/data/tiles',["require", "exports"], function (require, exports) {
     exports.default = tiles;
 });
 
-define('world/chunk',["require", "exports", '../tile/tile', '../helpers', '../tile/data/tiles'], function (require, exports, tile_1, helpers_1, tiles_1) {
+define('world/chunk',["require", "exports", 'aurelia-framework', '../tile/tile', '../helpers', '../tile/data/tiles'], function (require, exports, aurelia_framework_1, tile_1, helpers_1, tiles_1) {
     "use strict";
     var TileData = tiles_1.default;
     var Chunk = (function () {
-        function Chunk(seed) {
+        function Chunk(x, y) {
             this.chunkSizeX = 50;
             this.chunkSizeY = 38;
-            this.perlin = new helpers_1.Perlin();
+            this.perlin = aurelia_framework_1.Container.instance.get(helpers_1.Perlin);
             this.tiles = [];
-            this.seed = 329048;
+            this.worldX = (x * this.chunkSizeX) + x;
+            this.worldY = (y * this.chunkSizeY) + y;
             this.seedChunk();
         }
         Chunk.prototype.seedChunk = function () {
-            this.perlin.seed(this.seed);
             for (var y = 0; y < this.chunkSizeY; y++) {
                 this.tiles[y] = [];
                 for (var x = 0; x < this.chunkSizeX; x++) {
-                    var value = this.perlin.simplex2(x / 50, y / 50) * 500;
+                    var value = this.perlin.simplex2((x + this.worldX) / 50, (y + this.worldY) / 50) * 500;
                     var tileType = null;
                     if (value < 100) {
                         tileType = TileData.find(function (tile) { return tile.title === 'grass'; });
@@ -761,22 +764,41 @@ define('world/chunk',["require", "exports", '../tile/tile', '../helpers', '../ti
     exports.Chunk = Chunk;
 });
 
-define('world/world',["require", "exports", './chunk'], function (require, exports, chunk_1) {
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+define('world/world',["require", "exports", 'aurelia-framework', './chunk', '../helpers'], function (require, exports, aurelia_framework_1, chunk_1, helpers_1) {
     "use strict";
     var World = (function () {
-        function World() {
-            this.worldSizeX = 1;
-            this.worldSizeY = 1;
+        function World(perlin) {
+            this.perlin = perlin;
+            this.worldSizeX = 4;
+            this.worldSizeY = 4;
+            this.chunkSizeX = 50;
+            this.chunkSizeY = 38;
             this.chunks = [];
+            this.seed = new helpers_1.Random(Math.floor(Math.random() * 32000)).nextDouble();
         }
         World.prototype.generateWorld = function () {
+            this.perlin.seed(this.seed);
             for (var y = 0; y < this.worldSizeX; y++) {
                 this.chunks[y] = [];
                 for (var x = 0; x < this.worldSizeY; x++) {
-                    this.chunks[y][x] = new chunk_1.Chunk(0);
+                    debugger;
+                    this.chunks[y][x] = new chunk_1.Chunk(new helpers_1.Vector(x, y), new helpers_1.Vector(this.chunkSizeX, this.chunkSizeY));
                 }
             }
         };
+        World = __decorate([
+            aurelia_framework_1.inject(helpers_1.Perlin), 
+            __metadata('design:paramtypes', [Object])
+        ], World);
         return World;
     }());
     exports.World = World;
@@ -993,6 +1015,18 @@ define('resources/index',["require", "exports"], function (require, exports) {
     exports.configure = configure;
 });
 
-define('text!app.html', ['module'], function(module) { module.exports = "<template>\r\n    <div id=\"map\" style=\"background-color:black;\">\r\n        <div repeat.for=\"chunkY of game.world.chunks\">\r\n            <div repeat.for=\"chunkX of chunkY\">\r\n                <div repeat.for=\"tileY of chunkX.tiles\">\r\n                    <label repeat.for=\"tileX of tileY\" style=\"width:10px; text-align:center;color:${tileX.color}; padding:0 2px 0 2px; font-weight:bold;\">${tileX.symbol}</label>\r\n                </div>\r\n            </div>\r\n        </div>\r\n    </div>\r\n    <h2>Items</h2>\r\n    <ul>\r\n        <li repeat.for=\"item of game.itemContext.items\" click.delegate=\"AddItem(item)\">\r\n            ${item.title}\r\n        </li>\r\n    </ul>\r\n    <h2>Inventory</h2>\r\n    <div style=\"display: inline-block\">\r\n        <ul>\r\n            <li repeat.for=\"item of game.player.inventory.items\">\r\n                <div click.delegate=\"RemoveItem(item)\">${item.title}</div>\r\n                <div click.delegate=\"UseItem(item)\">Use</div>\r\n            </li>\r\n        </ul>\r\n    </div>\r\n    <div style=\"display: inline-block\">\r\n        <div>Weight: ${game.player.inventory.currentWeight}/${game.player.inventory.weightCap}</div>\r\n        <div>Volume: ${game.player.inventory.currentVolume}/${game.player.inventory.volumeCap}</div>\r\n    </div>\r\n\r\n    <h2>Health</h2>\r\n    <div style=\"display: inline-block\">\r\n        <ul>\r\n            <li repeat.for=\"part of game.player.health.parts\" click.delegate=\"RemoveItem(item)\">\r\n                ${item.title}\r\n                <div>${part.description}:${part.value}</div>\r\n            </li>\r\n        </ul>\r\n    </div>\r\n</template>"; });
+define('actor',["require", "exports", 'aurelia-framework', './world/world'], function (require, exports, aurelia_framework_1, world_1) {
+    "use strict";
+    var Actor = (function () {
+        function Actor() {
+            this.inventory = null;
+            this.world = aurelia_framework_1.Container.instance.get(world_1.World);
+        }
+        return Actor;
+    }());
+    exports.Actor = Actor;
+});
+
+define('text!app.html', ['module'], function(module) { module.exports = "<template>\r\n    <div id=\"map\" style=\"background-color:black;\">\r\n        <div repeat.for=\"chunkY of game.world.chunks\">\r\n            <div style=\"display:inline-block;\" repeat.for=\"chunkX of chunkY\">\r\n                <div repeat.for=\"tileY of chunkX.tiles\">\r\n                    <label repeat.for=\"tileX of tileY\" style=\"width:10px; text-align:center;color:${tileX.color}; padding:0 2px 0 2px; font-weight:bold;\">${tileX.symbol}</label>\r\n                </div>\r\n            </div>\r\n        </div>\r\n    </div>\r\n    <h2>Items</h2>\r\n    <ul>\r\n        <li repeat.for=\"item of game.itemContext.items\" click.delegate=\"AddItem(item)\">\r\n            ${item.title}\r\n        </li>\r\n    </ul>\r\n    <h2>Inventory</h2>\r\n    <div style=\"display: inline-block\">\r\n        <ul>\r\n            <li repeat.for=\"item of game.player.inventory.items\">\r\n                <div click.delegate=\"RemoveItem(item)\">${item.title}</div>\r\n                <div click.delegate=\"UseItem(item)\">Use</div>\r\n            </li>\r\n        </ul>\r\n    </div>\r\n    <div style=\"display: inline-block\">\r\n        <div>Weight: ${game.player.inventory.currentWeight}/${game.player.inventory.weightCap}</div>\r\n        <div>Volume: ${game.player.inventory.currentVolume}/${game.player.inventory.volumeCap}</div>\r\n    </div>\r\n\r\n    <h2>Health</h2>\r\n    <div style=\"display: inline-block\">\r\n        <ul>\r\n            <li repeat.for=\"part of game.player.health.parts\" click.delegate=\"RemoveItem(item)\">\r\n                ${item.title}\r\n                <div>${part.description}:${part.value}</div>\r\n            </li>\r\n        </ul>\r\n    </div>\r\n</template>"; });
 define('text!designer/item-designer.html', ['module'], function(module) { module.exports = "<template>\r\n\r\n<div>\r\n    \r\n</div>\r\n\r\n</template>"; });
 //# sourceMappingURL=app-bundle.js.map

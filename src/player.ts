@@ -3,16 +3,18 @@ import {Inventory} from './inventory/inventory';
 import {Health} from './health';
 import {Item} from './item/item';
 import {Monster} from './monster';
+import {Vector} from './helpers';
+import {World} from './world/world';
+import {Actor} from './actor';
 
-export class Player {
-    public inventory:Inventory = null;
-    public health:Health;
+export class Player extends Actor{
     public enemy:Monster;
-
+    public world:World;
+    
     constructor() {
-        this.health = new Health();
-        this.inventory = new Inventory();
+        super();
         this.enemy = null;
+
     }
 
     pickUp(item:Item) {

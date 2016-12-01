@@ -1,7 +1,7 @@
 <template>
     <div id="map" style="background-color:black;">
         <div repeat.for="chunkY of game.world.chunks">
-            <div repeat.for="chunkX of chunkY">
+            <div style="display:inline-block;" repeat.for="chunkX of chunkY">
                 <div repeat.for="tileY of chunkX.tiles">
                     <label repeat.for="tileX of tileY" style="width:10px; text-align:center;color:${tileX.color}; padding:0 2px 0 2px; font-weight:bold;">${tileX.symbol}</label>
                 </div>
