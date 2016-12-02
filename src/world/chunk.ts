@@ -27,7 +27,7 @@ export class Chunk {
             this.tiles[y] = [];
             for (let x = 0; x < this.chunkSize.x; x++) {
 
-                let tileWeight = this.perlin.simplex2((x + this.worldPosition.x) / 25, (y + this.worldPosition.y) / 25) * 500;
+                let tileWeight = this.perlin.simplex2((x + this.worldPosition.x) / 20, (y + this.worldPosition.y) / 20) * 500;
 
                 let tileType = null;
 
@@ -47,13 +47,13 @@ export class Chunk {
                     tileType = TileData.find(tile => tile.title === 'ridge');
                 }
 
-                let tile = new Tile(new Vector(x, y), new Vector(x + this.worldPosition.x, y + this.worldPosition.y));
-
-                tile.color = tileType.color;
+                let tile = new Tile(new Vector(x, y), new Vector(x + this.worldPosition.x, y + this.worldPosition.y), tileWeight);
+                if(!tile.color) 
+                    tile.color = tileType.color;
                 tile.movementCost = tileType.movementCost;
                 tile.title = tileType.title;
-                tile.symbol = String.fromCharCode(tileType.symbol);
-                tile.tileWieght = tileWeight;
+                if(!tile.symbol)
+                    tile.symbol = String.fromCharCode(tileType.symbol);
 
                 this.tiles[y][x] = tile;
             }
