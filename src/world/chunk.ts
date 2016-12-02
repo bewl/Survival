@@ -27,7 +27,7 @@ export class Chunk {
             this.tiles[y] = [];
             for (let x = 0; x < this.chunkSize.x; x++) {
 
-                let tileWeight = this.perlin.simplex2((x + this.worldPosition.x) / 20, (y + this.worldPosition.y) / 20) * 500;
+                let tileWeight = this.perlin.simplex2((x + this.worldPosition.x) / 208, (y + this.worldPosition.y) / 20) * 500;
 
                 let tileType = null;
 

@@ -517,7 +517,7 @@ define('world/chunk',["require", "exports", 'aurelia-framework', '../tile/tile',
             for (var y = 0; y < this.chunkSize.y; y++) {
                 this.tiles[y] = [];
                 for (var x = 0; x < this.chunkSize.x; x++) {
-                    var tileWeight = this.perlin.simplex2((x + this.worldPosition.x) / 20, (y + this.worldPosition.y) / 20) * 500;
+                    var tileWeight = this.perlin.simplex2((x + this.worldPosition.x) / 208, (y + this.worldPosition.y) / 20) * 500;
                     var tileType = null;
                     if (tileWeight < 100) {
                         tileType = TileData.find(function (tile) { return tile.title === 'grass'; });
