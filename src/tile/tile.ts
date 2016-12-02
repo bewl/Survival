@@ -10,6 +10,7 @@ export class Tile {
     public chunkPosition: Vector;
     public worldPosition: Vector;
     public isPlayer: boolean;
+    public tileWieght: number;
 
     constructor(chunkPosition: Vector, worldPosition: Vector) {
         this.worldPosition = worldPosition;

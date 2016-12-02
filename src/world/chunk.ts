@@ -27,23 +27,23 @@ export class Chunk {
             this.tiles[y] = [];
             for (let x = 0; x < this.chunkSize.x; x++) {
 
-                let value = this.perlin.simplex2((x + this.worldPosition.x) / 25, (y + this.worldPosition.y) / 25) * 500;
+                let tileWeight = this.perlin.simplex2((x + this.worldPosition.x) / 25, (y + this.worldPosition.y) / 25) * 500;
 
                 let tileType = null;
 
-                if (value < 100) {
+                if (tileWeight < 100) {
                     tileType = TileData.find(tile => tile.title === 'grass');
                 }
-                if(value >= 100 && value < 200) {
+                if(tileWeight >= 100 && tileWeight < 200) {
                     tileType = TileData.find(tile => tile.title === 'slope');
                 }
-                if(value >= 200 && value < 300) {
+                if(tileWeight >= 200 && tileWeight < 300) {
                     tileType = TileData.find(tile => tile.title === 'slope2');
                 }
-                if(value >= 300 && value < 400) {
+                if(tileWeight >= 300 && tileWeight < 400) {
                     tileType = TileData.find(tile => tile.title === 'slope3');
                 }
-                if(value >= 400 && value < 500) {
+                if(tileWeight >= 400 && tileWeight < 500) {
                     tileType = TileData.find(tile => tile.title === 'ridge');
                 }
 
@@ -53,7 +53,8 @@ export class Chunk {
                 tile.movementCost = tileType.movementCost;
                 tile.title = tileType.title;
                 tile.symbol = String.fromCharCode(tileType.symbol);
-                
+                tile.tileWieght = tileWeight;
+
                 this.tiles[y][x] = tile;
             }
 

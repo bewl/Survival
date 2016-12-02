@@ -507,21 +507,21 @@ define('world/chunk',["require", "exports", 'aurelia-framework', '../tile/tile',
             for (var y = 0; y < this.chunkSize.y; y++) {
                 this.tiles[y] = [];
                 for (var x = 0; x < this.chunkSize.x; x++) {
-                    var value = this.perlin.simplex2((x + this.worldPosition.x) / 25, (y + this.worldPosition.y) / 25) * 500;
+                    var tileWeight = this.perlin.simplex2((x + this.worldPosition.x) / 25, (y + this.worldPosition.y) / 25) * 500;
                     var tileType = null;
-                    if (value < 100) {
+                    if (tileWeight < 100) {
                         tileType = TileData.find(function (tile) { return tile.title === 'grass'; });
                     }
-                    if (value >= 100 && value < 200) {
+                    if (tileWeight >= 100 && tileWeight < 200) {
                         tileType = TileData.find(function (tile) { return tile.title === 'slope'; });
                     }
-                    if (value >= 200 && value < 300) {
+                    if (tileWeight >= 200 && tileWeight < 300) {
                         tileType = TileData.find(function (tile) { return tile.title === 'slope2'; });
                     }
-                    if (value >= 300 && value < 400) {
+                    if (tileWeight >= 300 && tileWeight < 400) {
                         tileType = TileData.find(function (tile) { return tile.title === 'slope3'; });
                     }
-                    if (value >= 400 && value < 500) {
+                    if (tileWeight >= 400 && tileWeight < 500) {
                         tileType = TileData.find(function (tile) { return tile.title === 'ridge'; });
                     }
                     var tile = new tile_1.Tile(new helpers_1.Vector(x, y), new helpers_1.Vector(x + this.worldPosition.x, y + this.worldPosition.y));
@@ -529,6 +529,7 @@ define('world/chunk',["require", "exports", 'aurelia-framework', '../tile/tile',
                     tile.movementCost = tileType.movementCost;
                     tile.title = tileType.title;
                     tile.symbol = String.fromCharCode(tileType.symbol);
+                    tile.tileWieght = tileWeight;
                     this.tiles[y][x] = tile;
                 }
             }
