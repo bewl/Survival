@@ -3,7 +3,7 @@
         <div repeat.for="chunkY of game.world.chunks">
             <div style="${chunkX.chunkPosition.x === 0 ? 'clear:both;' : ''} float:left" repeat.for="chunkX of chunkY">
                 <div repeat.for="tileY of chunkX.tiles">
-                    <label repeat.for="tileX of tileY" style="background-color:black; width:10px; text-align:center;color:${tileX.color}; font-weight:bold;" title="${tileX.worldPosition.x} ${tileX.worldPosition.y}">${tileX.symbol}</label>
+                    <label repeat.for="tileX of tileY" style="background-color:black; width:10px; text-align:center;color:${tileX.isPlayer ? 'blue' : tileX.color}; font-weight:bold;" title="${tileX.worldPosition.x} ${tileX.worldPosition.y}">${tileX.isPlayer ? '@' : tileX.symbol}</label>
                 </div>
             </div>
         </div>

@@ -18,9 +18,9 @@ export class Vector {
     public x: number;
     public y: number;
 
-    constructor(x, y) {
-        this.x = x;
-        this.y = y;
+    constructor(x?:number, y?:number) {
+        this.x = x || 0;
+        this.y = y || 0;
     }
 
     dot2(x, y) {
@@ -34,10 +34,10 @@ export class Vector3 {
     public y: number;
     public z: number;
 
-    constructor(x, y, z) {
-        this.x = x;
-        this.y = y;
-        this.z = z;
+    constructor(x?:number, y?:number, z?:number) {
+        this.x = x || 0;
+        this.y = y || 0;
+        this.z = z || 0;
     }
 
     dot2(x, y) {

@@ -18,8 +18,8 @@ define('helpers',["require", "exports"], function (require, exports) {
     exports.Guid = Guid;
     var Vector = (function () {
         function Vector(x, y) {
-            this.x = x;
-            this.y = y;
+            this.x = x || 0;
+            this.y = y || 0;
         }
         Vector.prototype.dot2 = function (x, y) {
             return this.x * x + this.y * y;
@@ -30,9 +30,9 @@ define('helpers',["require", "exports"], function (require, exports) {
     exports.Vector = Vector;
     var Vector3 = (function () {
         function Vector3(x, y, z) {
-            this.x = x;
-            this.y = y;
-            this.z = z;
+            this.x = x || 0;
+            this.y = y || 0;
+            this.z = z || 0;
         }
         Vector3.prototype.dot2 = function (x, y) {
             return this.x * x + this.y * y;
@@ -446,6 +446,7 @@ define('tile/tile',["require", "exports", '../inventory/inventory'], function (r
             this.worldPosition = worldPosition;
             this.chunkPosition = chunkPosition;
             this.inventory = new inventory_1.Inventory();
+            this.isPlayer = false;
         }
         return Tile;
     }());
@@ -552,9 +553,10 @@ define('world/world',["require", "exports", 'aurelia-framework', './chunk', '../
         function World(perlin) {
             this.perlin = perlin;
             this.worldSize = new helpers_1.Vector(2, 2);
-            this.chunkSize = new helpers_1.Vector(50, 38);
+            this.chunkSize = new helpers_1.Vector(38, 50);
             this.chunks = [];
             this.seed = new helpers_1.Random(Math.floor(Math.random() * 32000)).nextDouble();
+            this.playerTile = null;
         }
         World.prototype.generateWorld = function () {
             this.perlin.seed(this.seed);
@@ -565,6 +567,22 @@ define('world/world',["require", "exports", 'aurelia-framework', './chunk', '../
                 }
             }
         };
+        World.prototype.setIsPlayer = function (tile) {
+            if (this.playerTile) {
+                this.playerTile.isPlayer = false;
+            }
+            this.playerTile = this.getTile(tile);
+            this.playerTile.isPlayer = true;
+        };
+        World.prototype.getTile = function (position) {
+            var targetChunkX = Math.floor(position.x / this.chunkSize.x);
+            var targetChunkY = Math.floor(position.y / this.chunkSize.y);
+            var targetTileX = Math.floor(position.x % this.chunkSize.x);
+            var targetTileY = Math.floor(position.y % this.chunkSize.y);
+            var targetChunk = this.chunks[targetChunkY][targetChunkX];
+            var targetTile = targetChunk.tiles[targetTileY][targetTileX];
+            return targetTile;
+        };
         World = __decorate([
             aurelia_framework_1.inject(helpers_1.Perlin), 
             __metadata('design:paramtypes', [Object])
@@ -574,7 +592,7 @@ define('world/world',["require", "exports", 'aurelia-framework', './chunk', '../
     exports.World = World;
 });
 
-define('actor/actor',["require", "exports", 'aurelia-framework', '../world/world', '../inventory/inventory', './health'], function (require, exports, aurelia_framework_1, world_1, inventory_1, health_1) {
+define('actor/actor',["require", "exports", 'aurelia-framework', '../world/world', '../inventory/inventory', './health', '../helpers'], function (require, exports, aurelia_framework_1, world_1, inventory_1, health_1, helpers_1) {
     "use strict";
     var Actor = (function () {
         function Actor() {
@@ -583,6 +601,51 @@ define('actor/actor',["require", "exports", 'aurelia-framework', '../world/world
             this.inventory = new inventory_1.Inventory();
             this.health = new health_1.Health();
         }
+        Actor.prototype.setPosition = function (value) {
+            this.position = value;
+        };
+        Actor.prototype.move = function (direction, distance) {
+            var destination = new helpers_1.Vector();
+            var currentX = this.position.x;
+            var currentY = this.position.y;
+            switch (direction) {
+                case 'n':
+                    destination.x = currentX;
+                    destination.y = currentY - 1;
+                    break;
+                case 's':
+                    destination.x = currentX;
+                    destination.y = currentY + 1;
+                    break;
+                case 'e':
+                    destination.x = currentX + 1;
+                    destination.y = currentY;
+                    break;
+                case 'w':
+                    destination.x = currentX - 1;
+                    destination.y = currentY;
+                    break;
+                case 'nw':
+                    destination.x = currentX - 1;
+                    destination.y = currentY - 1;
+                    break;
+                case 'sw':
+                    destination.x = currentX - 1;
+                    destination.y = currentY + 1;
+                    break;
+                case 'se':
+                    destination.x = currentX + 1;
+                    destination.y = currentY + 1;
+                    break;
+                case 'ne':
+                    destination.x = currentX + 1;
+                    destination.y = currentY - 1;
+                    break;
+                default: break;
+            }
+            this.setPosition(destination);
+            this.world.setIsPlayer(destination);
+        };
         return Actor;
     }());
     exports.Actor = Actor;
@@ -824,21 +887,89 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
-define('game',["require", "exports", 'aurelia-framework', './actor/player', './item/item-context', './world/world'], function (require, exports, aurelia_framework_1, player_1, item_context_1, world_1) {
+define('input/input',["require", "exports", 'aurelia-framework', '../actor/player'], function (require, exports, aurelia_framework_1, player_1) {
+    "use strict";
+    var Input = (function () {
+        function Input(player) {
+            this.player = player;
+            this.boundHandler = this.handleKeyInput.bind(this);
+            window.addEventListener('keypress', this.boundHandler, false);
+        }
+        Input.prototype.activate = function () {
+            window.addEventListener('keypress', this.boundHandler, false);
+        };
+        Input.prototype.deactivate = function () {
+            window.removeEventListener('keypress', this.boundHandler);
+        };
+        Input.prototype.movePlayer = function (direction) {
+            this.player.move(direction, 1);
+        };
+        Input.prototype.handleKeyInput = function (event) {
+            switch (event.code.toUpperCase()) {
+                case "NUMPAD1":
+                    this.movePlayer('sw');
+                    break;
+                case "NUMPAD2":
+                    this.movePlayer('s');
+                    break;
+                case "NUMPAD3":
+                    this.movePlayer('se');
+                    break;
+                case "NUMPAD4":
+                    this.movePlayer('w');
+                    break;
+                case "NUMPAD6":
+                    this.movePlayer('e');
+                    break;
+                case "NUMPAD7":
+                    this.movePlayer('nw');
+                    break;
+                case "NUMPAD8":
+                    this.movePlayer('n');
+                    break;
+                case "NUMPAD9":
+                    this.movePlayer('ne');
+                    break;
+            }
+            console.log(event);
+            console.log(this.player.position);
+        };
+        Input = __decorate([
+            aurelia_framework_1.inject(player_1.Player), 
+            __metadata('design:paramtypes', [Object])
+        ], Input);
+        return Input;
+    }());
+    exports.Input = Input;
+});
+
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+define('game',["require", "exports", 'aurelia-framework', './actor/player', './item/item-context', './world/world', './helpers', './input/input'], function (require, exports, aurelia_framework_1, player_1, item_context_1, world_1, helpers_1, input_1) {
     "use strict";
     var Game = (function () {
-        function Game(player, world, itemContext) {
+        function Game(player, world, itemContext, input) {
             this.player = null;
             this.itemContext = null;
             this.world = null;
-            this.player = player;
+            this.input = null;
             this.itemContext = itemContext;
             this.world = world;
+            this.player = player;
+            this.input = input;
             this.world.generateWorld();
+            player.setPosition(new helpers_1.Vector((this.world.chunkSize.x * this.world.worldSize.x) / 2, (this.world.chunkSize.y * this.world.worldSize.y) / 2));
         }
         Game = __decorate([
-            aurelia_framework_1.inject(player_1.Player, world_1.World, item_context_1.ItemContext), 
-            __metadata('design:paramtypes', [player_1.Player, world_1.World, item_context_1.ItemContext])
+            aurelia_framework_1.inject(player_1.Player, world_1.World, item_context_1.ItemContext, input_1.Input), 
+            __metadata('design:paramtypes', [player_1.Player, world_1.World, item_context_1.ItemContext, input_1.Input])
         ], Game);
         return Game;
     }());
@@ -888,10 +1019,6 @@ define('environment',["require", "exports"], function (require, exports) {
         testing: true
     };
 });
-
-
-
-define("input", [],function(){});
 
 var __extends = (this && this.__extends) || function (d, b) {
     for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
@@ -1015,6 +1142,24 @@ define('main',["require", "exports", './environment', './item/item-module-contai
     exports.configure = configure;
 });
 
+define('input/keybinds',["require", "exports"], function (require, exports) {
+    "use strict";
+    (function (Keybinds) {
+        Keybinds[Keybinds["A"] = 0] = "A";
+        Keybinds[Keybinds["NUM1"] = 1] = "NUM1";
+        Keybinds[Keybinds["NUM2"] = 2] = "NUM2";
+        Keybinds[Keybinds["NUM3"] = 3] = "NUM3";
+        Keybinds[Keybinds["NUM4"] = 4] = "NUM4";
+        Keybinds[Keybinds["NUM5"] = 5] = "NUM5";
+        Keybinds[Keybinds["NUM6"] = 6] = "NUM6";
+        Keybinds[Keybinds["NUM7"] = 7] = "NUM7";
+        Keybinds[Keybinds["NUM8"] = 8] = "NUM8";
+        Keybinds[Keybinds["NUM9"] = 9] = "NUM9";
+        Keybinds[Keybinds["NUM0"] = 10] = "NUM0";
+    })(exports.Keybinds || (exports.Keybinds = {}));
+    var Keybinds = exports.Keybinds;
+});
+
 define('resources/index',["require", "exports"], function (require, exports) {
     "use strict";
     function configure(config) {
@@ -1022,5 +1167,5 @@ define('resources/index',["require", "exports"], function (require, exports) {
     exports.configure = configure;
 });
 
-define('text!app.html', ['module'], function(module) { module.exports = "<template>\r\n    <div id=\"map\" style=\"background-color:black;font-family: 'Courier New', Courier, monospace\">\r\n        <div repeat.for=\"chunkY of game.world.chunks\">\r\n            <div style=\"${chunkX.chunkPosition.x === 0 ? 'clear:both;' : ''} float:left\" repeat.for=\"chunkX of chunkY\">\r\n                <div repeat.for=\"tileY of chunkX.tiles\">\r\n                    <label repeat.for=\"tileX of tileY\" style=\"background-color:black; width:10px; text-align:center;color:${tileX.color}; font-weight:bold;\" title=\"${tileX.worldPosition.x} ${tileX.worldPosition.y}\">${tileX.symbol}</label>\r\n                </div>\r\n            </div>\r\n        </div>\r\n    </div>\r\n    <h2>Items</h2>\r\n    <ul>\r\n        <li repeat.for=\"item of game.itemContext.items\" click.delegate=\"AddItem(item)\">\r\n            ${item.title}\r\n        </li>\r\n    </ul>\r\n    <h2>Inventory</h2>\r\n    <div style=\"display: inline-block\">\r\n        <ul>\r\n            <li repeat.for=\"item of game.player.inventory.items\">\r\n                <div click.delegate=\"RemoveItem(item)\">${item.title}</div>\r\n                <div click.delegate=\"UseItem(item)\">Use</div>\r\n            </li>\r\n        </ul>\r\n    </div>\r\n    <div style=\"display: inline-block\">\r\n        <div>Weight: ${game.player.inventory.currentWeight}/${game.player.inventory.weightCap}</div>\r\n        <div>Volume: ${game.player.inventory.currentVolume}/${game.player.inventory.volumeCap}</div>\r\n    </div>\r\n\r\n    <h2>Health</h2>\r\n    <div style=\"display: inline-block\">\r\n        <ul>\r\n            <li repeat.for=\"part of game.player.health.parts\" click.delegate=\"RemoveItem(item)\">\r\n                ${item.title}\r\n                <div>${part.description}:${part.value}</div>\r\n            </li>\r\n        </ul>\r\n    </div>\r\n</template>"; });
+define('text!app.html', ['module'], function(module) { module.exports = "<template>\r\n    <div id=\"map\" style=\"background-color:black;font-family: 'Courier New', Courier, monospace\">\r\n        <div repeat.for=\"chunkY of game.world.chunks\">\r\n            <div style=\"${chunkX.chunkPosition.x === 0 ? 'clear:both;' : ''} float:left\" repeat.for=\"chunkX of chunkY\">\r\n                <div repeat.for=\"tileY of chunkX.tiles\">\r\n                    <label repeat.for=\"tileX of tileY\" style=\"background-color:black; width:10px; text-align:center;color:${tileX.isPlayer ? 'blue' : tileX.color}; font-weight:bold;\" title=\"${tileX.worldPosition.x} ${tileX.worldPosition.y}\">${tileX.isPlayer ? '@' : tileX.symbol}</label>\r\n                </div>\r\n            </div>\r\n        </div>\r\n    </div>\r\n    <h2>Items</h2>\r\n    <ul>\r\n        <li repeat.for=\"item of game.itemContext.items\" click.delegate=\"AddItem(item)\">\r\n            ${item.title}\r\n        </li>\r\n    </ul>\r\n    <h2>Inventory</h2>\r\n    <div style=\"display: inline-block\">\r\n        <ul>\r\n            <li repeat.for=\"item of game.player.inventory.items\">\r\n                <div click.delegate=\"RemoveItem(item)\">${item.title}</div>\r\n                <div click.delegate=\"UseItem(item)\">Use</div>\r\n            </li>\r\n        </ul>\r\n    </div>\r\n    <div style=\"display: inline-block\">\r\n        <div>Weight: ${game.player.inventory.currentWeight}/${game.player.inventory.weightCap}</div>\r\n        <div>Volume: ${game.player.inventory.currentVolume}/${game.player.inventory.volumeCap}</div>\r\n    </div>\r\n\r\n    <h2>Health</h2>\r\n    <div style=\"display: inline-block\">\r\n        <ul>\r\n            <li repeat.for=\"part of game.player.health.parts\" click.delegate=\"RemoveItem(item)\">\r\n                ${item.title}\r\n                <div>${part.description}:${part.value}</div>\r\n            </li>\r\n        </ul>\r\n    </div>\r\n</template>"; });
 //# sourceMappingURL=app-bundle.js.map
