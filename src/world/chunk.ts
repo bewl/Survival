@@ -36,7 +36,7 @@ export class Chunk {
                 //TODO: This could be optimized
                 tileType = TileData.filter(tile =>
                     tile.weight.some(weight =>
-                        weight.max >= tileWeight && weight.min <= tileWeight
+                        (weight.max >= tileWeight || weight.max == null) && weight.min <= tileWeight
                     )
                 ).sort((a, b) => {
                     if (a.layer > b.layer) {
