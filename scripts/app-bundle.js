@@ -439,6 +439,26 @@ define('actor/health',["require", "exports"], function (require, exports) {
     exports.Health = Health;
 });
 
+define('tile/data/tile-data',["require", "exports"], function (require, exports) {
+    "use strict";
+    var tileData = [
+        {
+            id: "tree",
+            weight: [{ min: -111, max: -75 }, { min: 0, max: 25 }, { min: 75, max: 90 }, { min: 210, max: 225 }],
+            symbol: 165,
+            color: '#143306'
+        },
+        {
+            id: "water",
+            weight: [{ min: -500, max: -400 }],
+            symbol: 126,
+            color: '#84C3BE'
+        }
+    ];
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.default = tileData;
+});
+
 define('tile/tile',["require", "exports", '../inventory/inventory', './data/tile-data'], function (require, exports, inventory_1, tile_data_1) {
     "use strict";
     var Tile = (function () {
@@ -452,7 +472,7 @@ define('tile/tile',["require", "exports", '../inventory/inventory', './data/tile
         }
         Tile.prototype.generateData = function () {
             var _this = this;
-            var data = tile_data_1.default.find(function (tile) { return tile.weight.min <= _this.tileWeight && tile.weight.max >= _this.tileWeight; });
+            var data = tile_data_1.default.find(function (tile) { return tile.weight.find(function (weight) { return weight.min <= _this.tileWeight && weight.max >= _this.tileWeight; }) != null; });
             if (data) {
                 this.color = data.color;
                 this.symbol = String.fromCharCode(data.symbol);
@@ -468,31 +488,31 @@ define('tile/data/tiles',["require", "exports"], function (require, exports) {
     var tiles = [
         {
             title: "grass",
-            color: "#DAF7A6",
+            color: "#015D52",
             symbol: 183,
             movementCost: 50,
         },
         {
             title: "slope",
-            color: "#FFC300",
+            color: "#308446",
             symbol: 711,
             movementCost: 75,
         },
         {
             title: "slope2",
-            color: "#FF5733",
+            color: "#BDECB6",
             symbol: 711,
             movementCost: 100,
         },
         {
             title: "slope3",
-            color: "#C70039",
+            color: "#BDECB6",
             symbol: 711,
             movementCost: 150,
         },
         {
             title: "ridge",
-            color: "#900C3F",
+            color: "#ffffff",
             symbol: 710,
             movementCost: 75,
         },
@@ -517,7 +537,7 @@ define('world/chunk',["require", "exports", 'aurelia-framework', '../tile/tile',
             for (var y = 0; y < this.chunkSize.y; y++) {
                 this.tiles[y] = [];
                 for (var x = 0; x < this.chunkSize.x; x++) {
-                    var tileWeight = this.perlin.simplex2((x + this.worldPosition.x) / 208, (y + this.worldPosition.y) / 20) * 500;
+                    var tileWeight = this.perlin.simplex2((x + this.worldPosition.x) / 20, (y + this.worldPosition.y) / 20) * 500;
                     var tileType = null;
                     if (tileWeight < 100) {
                         tileType = TileData.find(function (tile) { return tile.title === 'grass'; });
@@ -1179,24 +1199,14 @@ define('resources/index',["require", "exports"], function (require, exports) {
     exports.configure = configure;
 });
 
-define('tile/data/tile-data',["require", "exports"], function (require, exports) {
+define('camera',["require", "exports"], function (require, exports) {
     "use strict";
-    var tileData = [
-        {
-            id: "tree",
-            weight: { min: -300, max: 22 },
-            symbol: 165,
-            color: '#00FF00'
-        },
-        {
-            id: "water",
-            weight: { min: -500, max: -400 },
-            symbol: 126,
-            color: '#0000FF'
+    var Camera = (function () {
+        function Camera() {
         }
-    ];
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.default = tileData;
+        return Camera;
+    }());
+    exports.Camera = Camera;
 });
 
 define('text!app.html', ['module'], function(module) { module.exports = "<template>\r\n    <div id=\"map\" style=\"background-color:black;font-family: 'Courier New', Courier, monospace\">\r\n        <div repeat.for=\"chunkY of game.world.chunks\">\r\n            <div style=\"${chunkX.chunkPosition.x === 0 ? 'clear:both;' : ''} float:left\" repeat.for=\"chunkX of chunkY\">\r\n                <div repeat.for=\"tileY of chunkX.tiles\">\r\n                    <label repeat.for=\"tileX of tileY\" style=\"background-color:black; width:10px; text-align:center;color:${tileX.isPlayer ? 'blue' : tileX.color}; font-weight:bold;\" title=\"${tileX.worldPosition.x} ${tileX.worldPosition.y}\">${tileX.isPlayer ? '@' : tileX.symbol}</label>\r\n                </div>\r\n            </div>\r\n        </div>\r\n    </div>\r\n    <h2>Items</h2>\r\n    <ul>\r\n        <li repeat.for=\"item of game.itemContext.items\" click.delegate=\"AddItem(item)\">\r\n            ${item.title}\r\n        </li>\r\n    </ul>\r\n    <h2>Inventory</h2>\r\n    <div style=\"display: inline-block\">\r\n        <ul>\r\n            <li repeat.for=\"item of game.player.inventory.items\">\r\n                <div click.delegate=\"RemoveItem(item)\">${item.title}</div>\r\n                <div click.delegate=\"UseItem(item)\">Use</div>\r\n            </li>\r\n        </ul>\r\n    </div>\r\n    <div style=\"display: inline-block\">\r\n        <div>Weight: ${game.player.inventory.currentWeight}/${game.player.inventory.weightCap}</div>\r\n        <div>Volume: ${game.player.inventory.currentVolume}/${game.player.inventory.volumeCap}</div>\r\n    </div>\r\n\r\n    <h2>Health</h2>\r\n    <div style=\"display: inline-block\">\r\n        <ul>\r\n            <li repeat.for=\"part of game.player.health.parts\" click.delegate=\"RemoveItem(item)\">\r\n                ${item.title}\r\n                <div>${part.description}:${part.value}</div>\r\n            </li>\r\n        </ul>\r\n    </div>\r\n</template>"; });

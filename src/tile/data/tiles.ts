@@ -1,31 +1,31 @@
 let tiles = [
     {
         title: "grass",
-        color: "#DAF7A6",
+        color: "#015D52",
         symbol: 183,
         movementCost: 50,
     },
     {
         title: "slope",
-        color: "#FFC300",
+        color: "#308446",
         symbol: 711,
         movementCost: 75,
     },
     {
         title: "slope2",
-        color: "#FF5733",
+        color: "#BDECB6",
         symbol: 711,
         movementCost: 100,
     },
     {
         title: "slope3",
-        color: "#C70039",
+        color: "#BDECB6",
         symbol: 711,
         movementCost: 150,
     },
     {
         title: "ridge",
-        color: "#900C3F",
+        color: "#ffffff",
         symbol: 710,
         movementCost: 75,
     },

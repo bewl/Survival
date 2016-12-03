@@ -25,7 +25,7 @@ export class Tile {
     }
 
     generateData() {
-        let data = tileData.find(tile => tile.weight.min <= this.tileWeight && tile.weight.max >= this.tileWeight);
+        let data = tileData.find(tile => tile.weight.find(weight => weight.min <= this.tileWeight && weight.max >= this.tileWeight) != null );
 
         if(data) {
             this.color = data.color;
