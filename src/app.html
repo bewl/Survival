@@ -1,11 +1,8 @@
 <template>
     <div id="map" style="background-color:black;font-family: 'Courier New', Courier, monospace">
-        <div repeat.for="chunkY of game.world.chunks">
-            <div style="${chunkX.chunkPosition.x === 0 ? 'clear:both;' : ''} float:left" repeat.for="chunkX of chunkY">
-                <div repeat.for="tileY of chunkX.tiles">
-                    <label repeat.for="tileX of tileY" style="background-color:black; width:10px; text-align:center;color:${tileX.isPlayer ? 'blue' : tileX.color}; font-weight:bold;" title="${tileX.worldPosition.x} ${tileX.worldPosition.y}">${tileX.isPlayer ? '@' : tileX.symbol}</label>
-                </div>
-            </div>
+        <div repeat.for="tileY of game.camera.viewport.tiles">
+            <label repeat.for="tileX of tileY" style="background-color:black; width:10px; text-align:center;color:${tileX.isPlayer ? 'blue' : tileX.color}; font-weight:bold;"
+                title="${tileX.worldPosition.x} ${tileX.worldPosition.y}">${tileX.isPlayer ? '@' : tileX.symbol}</label>
         </div>
     </div>
     <h2>Items</h2>
@@ -37,4 +34,5 @@
             </li>
         </ul>
     </div>
+
 </template>

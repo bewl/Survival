@@ -98,6 +98,7 @@ define('helpers',["require", "exports"], function (require, exports) {
         };
         ;
         Perlin.prototype.seed = function (seed) {
+            this.seedValue = seed;
             if (seed > 0 && seed < 1) {
                 seed *= 65536;
             }
@@ -439,27 +440,7 @@ define('actor/health',["require", "exports"], function (require, exports) {
     exports.Health = Health;
 });
 
-define('tile/data/tile-data',["require", "exports"], function (require, exports) {
-    "use strict";
-    var tileData = [
-        {
-            id: "tree",
-            weight: [{ min: -111, max: -75 }, { min: 0, max: 25 }, { min: 75, max: 90 }, { min: 210, max: 225 }],
-            symbol: 165,
-            color: '#143306'
-        },
-        {
-            id: "water",
-            weight: [{ min: -500, max: -400 }],
-            symbol: 126,
-            color: '#84C3BE'
-        }
-    ];
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.default = tileData;
-});
-
-define('tile/tile',["require", "exports", '../inventory/inventory', './data/tile-data'], function (require, exports, inventory_1, tile_data_1) {
+define('tile/tile',["require", "exports", '../inventory/inventory'], function (require, exports, inventory_1) {
     "use strict";
     var Tile = (function () {
         function Tile(chunkPosition, worldPosition, tileWeight) {
@@ -471,12 +452,6 @@ define('tile/tile',["require", "exports", '../inventory/inventory', './data/tile
             this.generateData();
         }
         Tile.prototype.generateData = function () {
-            var _this = this;
-            var data = tile_data_1.default.find(function (tile) { return tile.weight.find(function (weight) { return weight.min <= _this.tileWeight && weight.max >= _this.tileWeight; }) != null; });
-            if (data) {
-                this.color = data.color;
-                this.symbol = String.fromCharCode(data.symbol);
-            }
         };
         return Tile;
     }());
@@ -487,35 +462,61 @@ define('tile/data/tiles',["require", "exports"], function (require, exports) {
     "use strict";
     var tiles = [
         {
-            title: "grass",
+            id: "grass",
             color: "#015D52",
             symbol: 183,
             movementCost: 50,
+            weight: [{ min: -500, max: 100 }],
+            layer: 0,
         },
         {
-            title: "slope",
+            id: "slope",
             color: "#308446",
             symbol: 711,
             movementCost: 75,
+            weight: [{ min: 101, max: 200 }],
+            layer: 0,
         },
         {
-            title: "slope2",
+            id: "slope2",
             color: "#BDECB6",
             symbol: 711,
             movementCost: 100,
+            weight: [{ min: 201, max: 300 }],
+            layer: 0,
         },
         {
-            title: "slope3",
+            id: "slope3",
             color: "#BDECB6",
             symbol: 711,
             movementCost: 150,
+            weight: [{ min: 301, max: 400 }],
+            layer: 0,
         },
         {
-            title: "ridge",
+            id: "ridge",
             color: "#ffffff",
             symbol: 710,
             movementCost: 75,
+            weight: [{ min: 401, max: 500 }],
+            layer: 0,
         },
+        {
+            id: "tree",
+            weight: [{ min: -289, max: -212 }, { min: -111, max: -75 }, { min: 0, max: 25 }, { min: 75, max: 90 }],
+            symbol: 165,
+            color: '#017933',
+            movementCost: -1,
+            layer: 1
+        },
+        {
+            id: "water",
+            weight: [{ min: -500, max: -400 }],
+            symbol: 126,
+            color: '#84C3BE',
+            movementCost: -1,
+            layer: 1
+        }
     ];
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.default = tiles;
@@ -525,49 +526,173 @@ define('world/chunk',["require", "exports", 'aurelia-framework', '../tile/tile',
     "use strict";
     var TileData = tiles_1.default;
     var Chunk = (function () {
-        function Chunk(position, chunkSize) {
+        function Chunk(chunkSize, position, worldPosition) {
+            if (position === void 0) { position = new helpers_1.Vector(); }
+            this.position = null;
             this.chunkSize = chunkSize;
             this.perlin = aurelia_framework_1.Container.instance.get(helpers_1.Perlin);
             this.tiles = [];
-            this.chunkPosition = position;
-            this.worldPosition = new helpers_1.Vector((position.x * this.chunkSize.x) + position.x, (position.y * this.chunkSize.y) + position.y);
-            this.seedChunk();
+            this.position = position;
+            this.worldPosition = worldPosition ? worldPosition : new helpers_1.Vector((this.position.x * this.chunkSize.x), (position.y * this.chunkSize.y));
         }
         Chunk.prototype.seedChunk = function () {
+            if (this.position != null) {
+            }
             for (var y = 0; y < this.chunkSize.y; y++) {
                 this.tiles[y] = [];
-                for (var x = 0; x < this.chunkSize.x; x++) {
-                    var tileWeight = this.perlin.simplex2((x + this.worldPosition.x) / 20, (y + this.worldPosition.y) / 20) * 500;
+                var _loop_1 = function(x) {
+                    var tileWeight = Math.ceil(this_1.perlin.simplex2((x + this_1.worldPosition.x) / 20, (y + this_1.worldPosition.y) / 20) * 500);
                     var tileType = null;
-                    if (tileWeight < 100) {
-                        tileType = TileData.find(function (tile) { return tile.title === 'grass'; });
-                    }
-                    if (tileWeight >= 100 && tileWeight < 200) {
-                        tileType = TileData.find(function (tile) { return tile.title === 'slope'; });
-                    }
-                    if (tileWeight >= 200 && tileWeight < 300) {
-                        tileType = TileData.find(function (tile) { return tile.title === 'slope2'; });
-                    }
-                    if (tileWeight >= 300 && tileWeight < 400) {
-                        tileType = TileData.find(function (tile) { return tile.title === 'slope3'; });
-                    }
-                    if (tileWeight >= 400 && tileWeight < 500) {
-                        tileType = TileData.find(function (tile) { return tile.title === 'ridge'; });
-                    }
-                    var tile = new tile_1.Tile(new helpers_1.Vector(x, y), new helpers_1.Vector(x + this.worldPosition.x, y + this.worldPosition.y), tileWeight);
-                    if (!tile.color)
-                        tile.color = tileType.color;
+                    tileType = TileData.filter(function (tile) {
+                        return tile.weight.some(function (weight) {
+                            return weight.max >= tileWeight && weight.min <= tileWeight;
+                        });
+                    }).sort(function (a, b) {
+                        if (a.layer > b.layer) {
+                            return -1;
+                        }
+                        else if (a.layer < b.layer) {
+                            return 1;
+                        }
+                        return 0;
+                    })[0];
+                    var tile = new tile_1.Tile(new helpers_1.Vector(x, y), new helpers_1.Vector(x + this_1.worldPosition.x, y + this_1.worldPosition.y), tileWeight);
                     tile.movementCost = tileType.movementCost;
                     tile.title = tileType.title;
+                    if (!tile.color)
+                        tile.color = tileType.color;
                     if (!tile.symbol)
                         tile.symbol = String.fromCharCode(tileType.symbol);
-                    this.tiles[y][x] = tile;
+                    this_1.tiles[y][x] = tile;
+                };
+                var this_1 = this;
+                for (var x = 0; x < this.chunkSize.x; x++) {
+                    _loop_1(x);
                 }
             }
+        };
+        Chunk.prototype.getTileByWorldPosition = function (position, chunkSize) {
+            var size = chunkSize || this.chunkSize;
+            var targetTileX = Math.floor(position.x % size.x);
+            var targetTileY = Math.floor(position.y % size.y);
+            var targetTile = this.tiles[targetTileY][targetTileX];
+            return targetTile;
         };
         return Chunk;
     }());
     exports.Chunk = Chunk;
+});
+
+define('world/world',["require", "exports", 'aurelia-framework', './chunk', '../helpers'], function (require, exports, aurelia_framework_1, chunk_1, helpers_1) {
+    "use strict";
+    var World = (function () {
+        function World() {
+            this.perlin = aurelia_framework_1.Container.instance.get(helpers_1.Perlin);
+            this.worldSize = new helpers_1.Vector(2, 1);
+            this.chunkSize = new helpers_1.Vector(50, 38);
+            this.chunks = [];
+            this.seed = new helpers_1.Random(Math.floor(Math.random() * 32000)).nextDouble();
+            this.playerTile = null;
+            this.generateSeed();
+        }
+        World.prototype.generateSeed = function () {
+            this.perlin.seed(this.seed);
+        };
+        World.prototype.getChunkPositionFromTilePosition = function (position) {
+            var chunk = new helpers_1.Vector();
+            chunk.x = Math.floor(position.x / this.chunkSize.x);
+            chunk.y = Math.floor(position.y / this.chunkSize.y);
+            return chunk;
+        };
+        World.prototype.getChunk = function (position) {
+            var chunk = null;
+            if (this.chunks[position.y] && this.chunks[position.y][position.x]) {
+                chunk = this.chunks[position.y][position.x];
+            }
+            else {
+                chunk = new chunk_1.Chunk(new helpers_1.Vector(this.chunkSize.x, this.chunkSize.y), new helpers_1.Vector(position.x, position.y));
+                chunk.seedChunk();
+                if (!this.chunks[position.y])
+                    this.chunks[position.y] = [];
+                this.chunks[position.y][position.x] = chunk;
+            }
+            return chunk;
+        };
+        World.prototype.getChunks = function (start, end) {
+            var numChunksX = end.x - start.x;
+            var numChunksY = start.y - end.y;
+            var chunks = [];
+            for (var y = start.y; y <= end.y; y++) {
+                chunks[y] = [];
+                for (var x = start.x; x <= end.x; x++) {
+                    if (this.chunks[y] && this.chunks[y][x]) {
+                        chunks[y][x] = this.chunks[y][x];
+                    }
+                    else {
+                        chunks[y][x] = new chunk_1.Chunk(new helpers_1.Vector(this.chunkSize.x, this.chunkSize.y), new helpers_1.Vector(x, y));
+                        chunks[y][x].seedChunk();
+                        if (!this.chunks[y])
+                            this.chunks[y] = [];
+                        this.chunks[y][x] = chunks[y][x];
+                    }
+                }
+            }
+            return chunks;
+        };
+        World.prototype.getTileByWorldPosition = function (position) {
+            var targetChunkX = Math.floor(position.x / this.chunkSize.x);
+            var targetChunkY = Math.floor(position.y / this.chunkSize.y);
+            var targetTileX = Math.floor(position.x % this.chunkSize.x);
+            var targetTileY = Math.floor(position.y % this.chunkSize.y);
+            var targetChunk = null;
+            var targetTile = null;
+            if (this.chunks[targetChunkY]) {
+                if (this.chunks[targetChunkY][targetChunkX]) {
+                    targetChunk = this.chunks[targetChunkY][targetChunkX];
+                }
+            }
+            if (targetChunk === null) {
+                targetChunk = this.getChunk(new helpers_1.Vector(targetChunkX, targetChunkY));
+            }
+            targetTile = targetChunk.tiles[targetTileY][targetTileX];
+            return targetTile;
+        };
+        return World;
+    }());
+    exports.World = World;
+});
+
+define('actor/actor',["require", "exports", 'aurelia-framework', '../world/world', '../inventory/inventory', './health'], function (require, exports, aurelia_framework_1, world_1, inventory_1, health_1) {
+    "use strict";
+    var Actor = (function () {
+        function Actor() {
+            this.inventory = null;
+            this.world = aurelia_framework_1.Container.instance.get(world_1.World);
+            this.inventory = new inventory_1.Inventory();
+            this.health = new health_1.Health();
+        }
+        return Actor;
+    }());
+    exports.Actor = Actor;
+});
+
+var __extends = (this && this.__extends) || function (d, b) {
+    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
+    function __() { this.constructor = d; }
+    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+};
+define('actor/monster',["require", "exports", './actor'], function (require, exports, actor_1) {
+    "use strict";
+    var Monster = (function (_super) {
+        __extends(Monster, _super);
+        function Monster() {
+            _super.call(this);
+        }
+        Monster.prototype.attack = function () {
+        };
+        return Monster;
+    }(actor_1.Actor));
+    exports.Monster = Monster;
 });
 
 var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
@@ -579,64 +704,66 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
-define('world/world',["require", "exports", 'aurelia-framework', './chunk', '../helpers'], function (require, exports, aurelia_framework_1, chunk_1, helpers_1) {
+define('camera',["require", "exports", 'aurelia-framework', './helpers', './world/world', './world/chunk'], function (require, exports, aurelia_framework_1, helpers_1, world_1, chunk_1) {
     "use strict";
-    var World = (function () {
-        function World(perlin) {
-            this.perlin = perlin;
-            this.worldSize = new helpers_1.Vector(2, 2);
-            this.chunkSize = new helpers_1.Vector(38, 50);
-            this.chunks = [];
-            this.seed = new helpers_1.Random(Math.floor(Math.random() * 32000)).nextDouble();
-            this.playerTile = null;
+    var Camera = (function () {
+        function Camera(world) {
+            this.position = null;
+            this.viewportScale = new helpers_1.Vector(80, 32);
+            this.scale = new helpers_1.Vector(2, 2);
+            this.world = world;
+            this.viewport = null;
         }
-        World.prototype.generateWorld = function () {
-            this.perlin.seed(this.seed);
-            for (var y = 0; y < this.worldSize.y; y++) {
-                this.chunks[y] = [];
-                for (var x = 0; x < this.worldSize.x; x++) {
-                    this.chunks[y][x] = new chunk_1.Chunk(new helpers_1.Vector(x, y), new helpers_1.Vector(this.chunkSize.x, this.chunkSize.y));
-                }
-            }
+        Camera.prototype.move = function (position) {
+            var startChunk = new helpers_1.Vector(position.x - Math.floor(this.viewportScale.x / 2), position.y - Math.floor(this.viewportScale.y / 2));
+            this.updateViewport(startChunk, position);
+            this.position = position;
         };
-        World.prototype.setIsPlayer = function (tile) {
-            if (this.playerTile) {
-                this.playerTile.isPlayer = false;
-            }
-            this.playerTile = this.getTile(tile);
-            this.playerTile.isPlayer = true;
+        Camera.prototype.setIsPlayer = function (tile) {
+            var playerTile = this.viewport.getTileByWorldPosition(tile);
+            playerTile.isPlayer = true;
         };
-        World.prototype.getTile = function (position) {
-            var targetChunkX = Math.floor(position.x / this.chunkSize.x);
-            var targetChunkY = Math.floor(position.y / this.chunkSize.y);
-            var targetTileX = Math.floor(position.x % this.chunkSize.x);
-            var targetTileY = Math.floor(position.y % this.chunkSize.y);
-            var targetChunk = this.chunks[targetChunkY][targetChunkX];
-            var targetTile = targetChunk.tiles[targetTileY][targetTileX];
-            return targetTile;
+        Camera.prototype.updateViewport = function (startChunk, playerPosition) {
+            this.viewport = new chunk_1.Chunk(new helpers_1.Vector(this.viewportScale.x, this.viewportScale.y), null, startChunk);
+            this.viewport.seedChunk();
+            var playerTile = this.viewport.tiles[Math.floor(this.viewportScale.y / 2)][Math.floor(this.viewportScale.x / 2)];
+            playerTile.isPlayer = true;
         };
-        World = __decorate([
-            aurelia_framework_1.inject(helpers_1.Perlin), 
+        Camera = __decorate([
+            aurelia_framework_1.inject(world_1.World), 
             __metadata('design:paramtypes', [Object])
-        ], World);
-        return World;
+        ], Camera);
+        return Camera;
     }());
-    exports.World = World;
+    exports.Camera = Camera;
 });
 
-define('actor/actor',["require", "exports", 'aurelia-framework', '../world/world', '../inventory/inventory', './health', '../helpers'], function (require, exports, aurelia_framework_1, world_1, inventory_1, health_1, helpers_1) {
+var __extends = (this && this.__extends) || function (d, b) {
+    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
+    function __() { this.constructor = d; }
+    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+};
+define('actor/player',["require", "exports", 'aurelia-framework', '../helpers', './actor', '../camera'], function (require, exports, aurelia_framework_1, helpers_1, actor_1, camera_1) {
     "use strict";
-    var Actor = (function () {
-        function Actor() {
-            this.inventory = null;
-            this.world = aurelia_framework_1.Container.instance.get(world_1.World);
-            this.inventory = new inventory_1.Inventory();
-            this.health = new health_1.Health();
+    var Player = (function (_super) {
+        __extends(Player, _super);
+        function Player() {
+            _super.call(this);
+            this.enemy = null;
+            this.camera = aurelia_framework_1.Container.instance.get(camera_1.Camera);
         }
-        Actor.prototype.setPosition = function (value) {
+        Player.prototype.pickUp = function (item) {
+            this.inventory.addItem(item);
+        };
+        Player.prototype.attack = function () {
+        };
+        Player.prototype.equip = function (item) {
+        };
+        Player.prototype.setPlayerPosition = function (value) {
+            this.camera.move(value);
             this.position = value;
         };
-        Actor.prototype.move = function (direction, distance) {
+        Player.prototype.move = function (direction, distance) {
             var destination = new helpers_1.Vector();
             var currentX = this.position.x;
             var currentY = this.position.y;
@@ -675,50 +802,9 @@ define('actor/actor',["require", "exports", 'aurelia-framework', '../world/world
                     break;
                 default: break;
             }
-            this.setPosition(destination);
-            this.world.setIsPlayer(destination);
-        };
-        return Actor;
-    }());
-    exports.Actor = Actor;
-});
-
-var __extends = (this && this.__extends) || function (d, b) {
-    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
-    function __() { this.constructor = d; }
-    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-};
-define('actor/monster',["require", "exports", './actor'], function (require, exports, actor_1) {
-    "use strict";
-    var Monster = (function (_super) {
-        __extends(Monster, _super);
-        function Monster() {
-            _super.call(this);
-        }
-        Monster.prototype.attack = function () {
-        };
-        return Monster;
-    }(actor_1.Actor));
-    exports.Monster = Monster;
-});
-
-var __extends = (this && this.__extends) || function (d, b) {
-    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
-    function __() { this.constructor = d; }
-    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-};
-define('actor/player',["require", "exports", './actor'], function (require, exports, actor_1) {
-    "use strict";
-    var Player = (function (_super) {
-        __extends(Player, _super);
-        function Player() {
-            _super.call(this);
-            this.enemy = null;
-        }
-        Player.prototype.pickUp = function (item) {
-            this.inventory.addItem(item);
-        };
-        Player.prototype.attack = function () {
+            if (this.world.getTileByWorldPosition(destination).movementCost > -1) {
+                this.setPlayerPosition(destination);
+            }
         };
         return Player;
     }(actor_1.Actor));
@@ -984,24 +1070,26 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
-define('game',["require", "exports", 'aurelia-framework', './actor/player', './item/item-context', './world/world', './helpers', './input/input'], function (require, exports, aurelia_framework_1, player_1, item_context_1, world_1, helpers_1, input_1) {
+define('game',["require", "exports", 'aurelia-framework', './actor/player', './item/item-context', './world/world', './helpers', './input/input', './camera'], function (require, exports, aurelia_framework_1, player_1, item_context_1, world_1, helpers_1, input_1, camera_1) {
     "use strict";
     var Game = (function () {
-        function Game(player, world, itemContext, input) {
+        function Game(player, world, itemContext, input, camera) {
             this.player = null;
             this.itemContext = null;
             this.world = null;
             this.input = null;
             this.itemContext = itemContext;
-            this.world = world;
             this.player = player;
+            this.world = world;
             this.input = input;
-            this.world.generateWorld();
-            player.setPosition(new helpers_1.Vector((this.world.chunkSize.x * this.world.worldSize.x) / 2, (this.world.chunkSize.y * this.world.worldSize.y) / 2));
+            this.maxWorldSize = 200;
+            this.camera = camera;
+            var position = new helpers_1.Vector((this.world.chunkSize.x * this.maxWorldSize) / 2, (this.world.chunkSize.y * this.maxWorldSize) / 2);
+            this.player.setPlayerPosition(position);
         }
         Game = __decorate([
-            aurelia_framework_1.inject(player_1.Player, world_1.World, item_context_1.ItemContext, input_1.Input), 
-            __metadata('design:paramtypes', [player_1.Player, world_1.World, item_context_1.ItemContext, input_1.Input])
+            aurelia_framework_1.inject(player_1.Player, world_1.World, item_context_1.ItemContext, input_1.Input, camera_1.Camera), 
+            __metadata('design:paramtypes', [player_1.Player, world_1.World, item_context_1.ItemContext, input_1.Input, camera_1.Camera])
         ], Game);
         return Game;
     }());
@@ -1199,15 +1287,15 @@ define('resources/index',["require", "exports"], function (require, exports) {
     exports.configure = configure;
 });
 
-define('camera',["require", "exports"], function (require, exports) {
+define('tile/modules/tree',["require", "exports"], function (require, exports) {
     "use strict";
-    var Camera = (function () {
-        function Camera() {
+    var Tree = (function () {
+        function Tree() {
         }
-        return Camera;
+        return Tree;
     }());
-    exports.Camera = Camera;
+    exports.Tree = Tree;
 });
 
-define('text!app.html', ['module'], function(module) { module.exports = "<template>\r\n    <div id=\"map\" style=\"background-color:black;font-family: 'Courier New', Courier, monospace\">\r\n        <div repeat.for=\"chunkY of game.world.chunks\">\r\n            <div style=\"${chunkX.chunkPosition.x === 0 ? 'clear:both;' : ''} float:left\" repeat.for=\"chunkX of chunkY\">\r\n                <div repeat.for=\"tileY of chunkX.tiles\">\r\n                    <label repeat.for=\"tileX of tileY\" style=\"background-color:black; width:10px; text-align:center;color:${tileX.isPlayer ? 'blue' : tileX.color}; font-weight:bold;\" title=\"${tileX.worldPosition.x} ${tileX.worldPosition.y}\">${tileX.isPlayer ? '@' : tileX.symbol}</label>\r\n                </div>\r\n            </div>\r\n        </div>\r\n    </div>\r\n    <h2>Items</h2>\r\n    <ul>\r\n        <li repeat.for=\"item of game.itemContext.items\" click.delegate=\"AddItem(item)\">\r\n            ${item.title}\r\n        </li>\r\n    </ul>\r\n    <h2>Inventory</h2>\r\n    <div style=\"display: inline-block\">\r\n        <ul>\r\n            <li repeat.for=\"item of game.player.inventory.items\">\r\n                <div click.delegate=\"RemoveItem(item)\">${item.title}</div>\r\n                <div click.delegate=\"UseItem(item)\">Use</div>\r\n            </li>\r\n        </ul>\r\n    </div>\r\n    <div style=\"display: inline-block\">\r\n        <div>Weight: ${game.player.inventory.currentWeight}/${game.player.inventory.weightCap}</div>\r\n        <div>Volume: ${game.player.inventory.currentVolume}/${game.player.inventory.volumeCap}</div>\r\n    </div>\r\n\r\n    <h2>Health</h2>\r\n    <div style=\"display: inline-block\">\r\n        <ul>\r\n            <li repeat.for=\"part of game.player.health.parts\" click.delegate=\"RemoveItem(item)\">\r\n                ${item.title}\r\n                <div>${part.description}:${part.value}</div>\r\n            </li>\r\n        </ul>\r\n    </div>\r\n</template>"; });
+define('text!app.html', ['module'], function(module) { module.exports = "<template>\r\n    <div id=\"map\" style=\"background-color:black;font-family: 'Courier New', Courier, monospace\">\r\n        <div repeat.for=\"tileY of game.camera.viewport.tiles\">\r\n            <label repeat.for=\"tileX of tileY\" style=\"background-color:black; width:10px; text-align:center;color:${tileX.isPlayer ? 'blue' : tileX.color}; font-weight:bold;\"\r\n                title=\"${tileX.worldPosition.x} ${tileX.worldPosition.y}\">${tileX.isPlayer ? '@' : tileX.symbol}</label>\r\n        </div>\r\n    </div>\r\n    <h2>Items</h2>\r\n    <ul>\r\n        <li repeat.for=\"item of game.itemContext.items\" click.delegate=\"AddItem(item)\">\r\n            ${item.title}\r\n        </li>\r\n    </ul>\r\n    <h2>Inventory</h2>\r\n    <div style=\"display: inline-block\">\r\n        <ul>\r\n            <li repeat.for=\"item of game.player.inventory.items\">\r\n                <div click.delegate=\"RemoveItem(item)\">${item.title}</div>\r\n                <div click.delegate=\"UseItem(item)\">Use</div>\r\n            </li>\r\n        </ul>\r\n    </div>\r\n    <div style=\"display: inline-block\">\r\n        <div>Weight: ${game.player.inventory.currentWeight}/${game.player.inventory.weightCap}</div>\r\n        <div>Volume: ${game.player.inventory.currentVolume}/${game.player.inventory.volumeCap}</div>\r\n    </div>\r\n\r\n    <h2>Health</h2>\r\n    <div style=\"display: inline-block\">\r\n        <ul>\r\n            <li repeat.for=\"part of game.player.health.parts\" click.delegate=\"RemoveItem(item)\">\r\n                ${item.title}\r\n                <div>${part.description}:${part.value}</div>\r\n            </li>\r\n        </ul>\r\n    </div>\r\n\r\n</template>"; });
 //# sourceMappingURL=app-bundle.js.map

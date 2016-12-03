@@ -84,7 +84,7 @@ export class Perlin {
     x: number;
     y: number;
     z: number;
-
+    seedValue: number;
     p: Array<number>;
 
     grad3: Array<Vector3>;
@@ -130,6 +130,7 @@ export class Perlin {
     // This isn't a very good seeding function, but it works ok. It supports 2^16
     // different seed values. Write something better if you need more seeds.
     seed(seed) {
+        this.seedValue = seed;
         if (seed > 0 && seed < 1) {
             // Scale the seed out
             seed *= 65536;

@@ -1,28 +1,34 @@
-import {inject} from 'aurelia-framework';
-import {Player} from './actor/player';
-import {ItemContext} from './item/item-context';
-import {World} from './world/world';
-import {Vector} from './helpers';
-import {Input} from './input/input';
+import { inject } from 'aurelia-framework';
+import { Player } from './actor/player';
+import { ItemContext } from './item/item-context';
+import { World } from './world/world';
+import { Vector } from './helpers';
+import { Input } from './input/input';
+import { Camera} from './camera';
 
-@inject(Player, World, ItemContext, Input)
+@inject(Player, World, ItemContext, Input, Camera)
 export class Game {
     player: Player = null;
     itemContext: ItemContext = null;
-    world:World = null;
-    input:Input = null;
+    world: World = null;
+    input: Input = null;
+    maxWorldSize: number;
+    camera: Camera;
+    constructor(player: Player, world: World, itemContext: ItemContext, input: Input, camera: Camera) {
 
-    constructor(player: Player, world: World, itemContext: ItemContext, input: Input){
-        
         this.itemContext = itemContext;
-        this.world = world;
         this.player = player;
+        this.world = world;
         this.input = input;
-        
+        this.maxWorldSize = 200;
+        this.camera = camera;
         //TODO: clean this up
+        
+        //this.world.generateWorld();]
+        let position = new Vector((this.world.chunkSize.x * this.maxWorldSize) / 2, (this.world.chunkSize.y * this.maxWorldSize) / 2);
+        
+        this.player.setPlayerPosition(position);
 
-        this.world.generateWorld();
-        player.setPosition(new Vector((this.world.chunkSize.x * this.world.worldSize.x) / 2 , (this.world.chunkSize.y * this.world.worldSize.y) / 2));
     }
 
 }
