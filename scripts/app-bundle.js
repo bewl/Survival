@@ -466,12 +466,12 @@ define('tile/data/tiles',["require", "exports"], function (require, exports) {
             color: "#66CD00",
             symbol: 183,
             movementCost: 50,
-            weight: [{ min: -500, max: null }],
+            weight: [{ min: 0.07, max: null }],
             layer: 0,
         },
         {
             id: "tree",
-            weight: [{ min: -250, max: -212 }, { min: -111, max: -75 }, { min: 0, max: 25 }, { min: 75, max: 90 }],
+            weight: [{ min: 0.10, max: 0.19 }, { min: 0.23, max: 0.26 }, { min: 0.35, max: 0.40 }, { min: 0.45, max: 0.50 }],
             symbol: 165,
             color: '#017933',
             movementCost: -1,
@@ -479,7 +479,7 @@ define('tile/data/tiles',["require", "exports"], function (require, exports) {
         },
         {
             id: "water",
-            weight: [{ min: -500, max: -300 }],
+            weight: [{ min: null, max: 0.07 }],
             symbol: 126,
             color: '#006994',
             movementCost: -1,
@@ -506,24 +506,35 @@ define('world/chunk',["require", "exports", 'aurelia-framework', '../tile/tile',
         Chunk.prototype.seedChunk = function () {
             if (this.position != null) {
             }
+            var weightMod = 750;
+            var weightRange = weightMod - (-Math.abs(weightMod));
+            var modX = 20;
+            var modY = 20;
+            var weightMap = [];
+            TileData.forEach(function (tile) {
+                tile.weight.forEach(function (weight) {
+                    weightMap.push({ id: tile.id, weight: { min: weight.min == null ? null : (weight.min * weightRange) + (-Math.abs(weightMod)), max: weight.max == null ? null : (weight.max * weightRange) + (-Math.abs(weightMod)) }, layer: tile.layer });
+                });
+            });
+            weightMap = weightMap.sort(function (a, b) {
+                if (a.layer > b.layer) {
+                    return -1;
+                }
+                else if (a.layer < b.layer) {
+                    return 1;
+                }
+                return 0;
+            });
             for (var y = 0; y < this.chunkSize.y; y++) {
                 this.tiles[y] = [];
                 var _loop_1 = function(x) {
-                    var tileWeight = Math.ceil(this_1.perlin.simplex2((x + this_1.worldPosition.x) / 20, (y + this_1.worldPosition.y) / 20) * 500);
+                    var tileWeight = Math.ceil(this_1.perlin.simplex2((x + this_1.worldPosition.x) / modX, (y + this_1.worldPosition.y) / modY) * weightMod);
                     var tileType = null;
-                    tileType = TileData.filter(function (tile) {
-                        return tile.weight.some(function (weight) {
-                            return (weight.max >= tileWeight || weight.max == null) && weight.min <= tileWeight;
-                        });
-                    }).sort(function (a, b) {
-                        if (a.layer > b.layer) {
-                            return -1;
-                        }
-                        else if (a.layer < b.layer) {
-                            return 1;
-                        }
-                        return 0;
-                    })[0];
+                    var tileData = weightMap.find(function (tile) {
+                        return (tile.weight.max >= tileWeight || tile.weight.max == null)
+                            && (tile.weight.min <= tileWeight || tile.weight.min == null);
+                    });
+                    tileType = TileData.find(function (tile) { return tile.id == tileData.id; });
                     var tile = new tile_1.Tile(new helpers_1.Vector(x, y), new helpers_1.Vector(x + this_1.worldPosition.x, y + this_1.worldPosition.y), tileWeight);
                     tile.movementCost = tileType.movementCost;
                     tile.title = tileType.title;
@@ -1265,5 +1276,6 @@ define('tile/modules/tree',["require", "exports"], function (require, exports) {
     exports.Tree = Tree;
 });
 
-define('text!app.html', ['module'], function(module) { module.exports = "<template>\r\n    <div id=\"map\" style=\"background-color:black;font-family: 'Courier New', Courier, monospace\">\r\n        <div repeat.for=\"tileY of game.camera.viewport.tiles\">\r\n            <label repeat.for=\"tileX of tileY\" style=\"background-color:black; width:10px; text-align:center;color:${tileX.isPlayer ? 'blue' : tileX.color}; font-weight:bold;\"\r\n                title=\"${tileX.worldPosition.x} ${tileX.worldPosition.y}\">${tileX.isPlayer ? '@' : tileX.symbol}</label>\r\n        </div>\r\n    </div>\r\n    <h2>Items</h2>\r\n    <ul>\r\n        <li repeat.for=\"item of game.itemContext.items\" click.delegate=\"AddItem(item)\">\r\n            ${item.title}\r\n        </li>\r\n    </ul>\r\n    <h2>Inventory</h2>\r\n    <div style=\"display: inline-block\">\r\n        <ul>\r\n            <li repeat.for=\"item of game.player.inventory.items\">\r\n                <div click.delegate=\"RemoveItem(item)\">${item.title}</div>\r\n                <div click.delegate=\"UseItem(item)\">Use</div>\r\n            </li>\r\n        </ul>\r\n    </div>\r\n    <div style=\"display: inline-block\">\r\n        <div>Weight: ${game.player.inventory.currentWeight}/${game.player.inventory.weightCap}</div>\r\n        <div>Volume: ${game.player.inventory.currentVolume}/${game.player.inventory.volumeCap}</div>\r\n    </div>\r\n\r\n    <h2>Health</h2>\r\n    <div style=\"display: inline-block\">\r\n        <ul>\r\n            <li repeat.for=\"part of game.player.health.parts\" click.delegate=\"RemoveItem(item)\">\r\n                ${item.title}\r\n                <div>${part.description}:${part.value}</div>\r\n            </li>\r\n        </ul>\r\n    </div>\r\n\r\n</template>"; });
+define('text!app.html', ['module'], function(module) { module.exports = "<template>\r\n    <div id=\"map\" style=\"background-color:black;font-family: 'Courier New', Courier, monospace; float:left;\">\r\n        <div repeat.for=\"tileY of game.camera.viewport.tiles\">\r\n            <label repeat.for=\"tileX of tileY\" style=\"background-color:black; width:10px; text-align:center;color:${tileX.isPlayer ? 'blue' : tileX.color}; font-weight:bold;\"\r\n                title=\"${tileX.worldPosition.x} ${tileX.worldPosition.y}\">${tileX.isPlayer ? '@' : tileX.symbol}</label>\r\n        </div>\r\n    </div>\r\n    <div id=\"ui\">\r\n        <div style=\"display: inline-block;\">\r\n            <h2>Items</h2>\r\n            <ul>\r\n                <li repeat.for=\"item of game.itemContext.items\" click.delegate=\"AddItem(item)\">\r\n                    ${item.title}\r\n                </li>\r\n            </ul>\r\n            <h2>Inventory</h2>\r\n            <div>\r\n                <div>\r\n                    <div>Weight: ${game.player.inventory.currentWeight}/${game.player.inventory.weightCap}</div>\r\n                    <div>Volume: ${game.player.inventory.currentVolume}/${game.player.inventory.volumeCap}</div>\r\n                </div>\r\n                <div style=\"display: inline-block\">\r\n                    <ul>\r\n                        <li repeat.for=\"item of game.player.inventory.items\">\r\n                            <div click.delegate=\"RemoveItem(item)\">${item.title}</div>\r\n                            <div click.delegate=\"UseItem(item)\">Use</div>\r\n                        </li>\r\n                    </ul>\r\n                </div>\r\n            </div>\r\n        </div>\r\n        <div style=\"display: inline-block\">\r\n            <ul>\r\n                <li repeat.for=\"part of game.player.health.parts\" click.delegate=\"RemoveItem(item)\">\r\n                    ${item.title}\r\n                    <div>${part.description}:${part.value}</div>\r\n                </li>\r\n            </ul>\r\n        </div>\r\n    </div>\r\n</template>"; });
+define('text!site.css', ['module'], function(module) { module.exports = "body {\r\n\r\n}\r\n\r\n#ui ul li {\r\n    list-style: none;\r\n}"; });
 //# sourceMappingURL=app-bundle.js.map

@@ -1,38 +1,41 @@
 <template>
-    <div id="map" style="background-color:black;font-family: 'Courier New', Courier, monospace">
+    <div id="map" style="background-color:black;font-family: 'Courier New', Courier, monospace; float:left;">
         <div repeat.for="tileY of game.camera.viewport.tiles">
             <label repeat.for="tileX of tileY" style="background-color:black; width:10px; text-align:center;color:${tileX.isPlayer ? 'blue' : tileX.color}; font-weight:bold;"
                 title="${tileX.worldPosition.x} ${tileX.worldPosition.y}">${tileX.isPlayer ? '@' : tileX.symbol}</label>
         </div>
     </div>
-    <h2>Items</h2>
-    <ul>
-        <li repeat.for="item of game.itemContext.items" click.delegate="AddItem(item)">
-            ${item.title}
-        </li>
-    </ul>
-    <h2>Inventory</h2>
-    <div style="display: inline-block">
-        <ul>
-            <li repeat.for="item of game.player.inventory.items">
-                <div click.delegate="RemoveItem(item)">${item.title}</div>
-                <div click.delegate="UseItem(item)">Use</div>
-            </li>
-        </ul>
+    <div id="ui">
+        <div style="display: inline-block;">
+            <h2>Items</h2>
+            <ul>
+                <li repeat.for="item of game.itemContext.items" click.delegate="AddItem(item)">
+                    ${item.title}
+                </li>
+            </ul>
+            <h2>Inventory</h2>
+            <div>
+                <div>
+                    <div>Weight: ${game.player.inventory.currentWeight}/${game.player.inventory.weightCap}</div>
+                    <div>Volume: ${game.player.inventory.currentVolume}/${game.player.inventory.volumeCap}</div>
+                </div>
+                <div style="display: inline-block">
+                    <ul>
+                        <li repeat.for="item of game.player.inventory.items">
+                            <div click.delegate="RemoveItem(item)">${item.title}</div>
+                            <div click.delegate="UseItem(item)">Use</div>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div style="display: inline-block">
+            <ul>
+                <li repeat.for="part of game.player.health.parts" click.delegate="RemoveItem(item)">
+                    ${item.title}
+                    <div>${part.description}:${part.value}</div>
+                </li>
+            </ul>
+        </div>
     </div>
-    <div style="display: inline-block">
-        <div>Weight: ${game.player.inventory.currentWeight}/${game.player.inventory.weightCap}</div>
-        <div>Volume: ${game.player.inventory.currentVolume}/${game.player.inventory.volumeCap}</div>
-    </div>
-
-    <h2>Health</h2>
-    <div style="display: inline-block">
-        <ul>
-            <li repeat.for="part of game.player.health.parts" click.delegate="RemoveItem(item)">
-                ${item.title}
-                <div>${part.description}:${part.value}</div>
-            </li>
-        </ul>
-    </div>
-
 </template>

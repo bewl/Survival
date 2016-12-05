@@ -1,0 +1,9 @@
+body {
+    font-family: 'Courier New', Courier, monospace; 
+    background-color: black; 
+    color: yellow;
+}
+
+#ui ul li {
+    list-style: none;
+}

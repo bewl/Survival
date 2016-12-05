@@ -4,12 +4,12 @@ let tiles = [
         color: "#66CD00",
         symbol: 183,
         movementCost: 50,
-        weight: [{min:-500, max:null}],
+        weight: [{min:0.07, max:null}],
         layer: 0,
     },
     {
         id: "tree",
-        weight: [{min: -250, max: -212}, {min: -111, max: -75}, {min: 0, max: 25}, {min: 75, max: 90}],
+        weight: [{min: 0.10, max: 0.19}, {min: 0.23, max: 0.26}, {min: 0.35, max: 0.40}, {min: 0.45, max: 0.50}],
         symbol: 165,
         color: '#017933',
         movementCost: -1,
@@ -17,7 +17,7 @@ let tiles = [
     },
     {
         id: "water",
-        weight: [{min: -500, max: -300}],
+        weight: [{min: null, max: 0.07}],
         symbol: 126,
         color: '#006994',
         movementCost: -1,
