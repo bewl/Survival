@@ -22,13 +22,12 @@ export class Game {
         this.input = input;
         this.maxWorldSize = 200;
         this.camera = camera;
-        //TODO: clean this up
-        
-        //this.world.generateWorld();]
+    }
+
+    init() {
         let position = new Vector((this.world.chunkSize.x * this.maxWorldSize) / 2, (this.world.chunkSize.y * this.maxWorldSize) / 2);
         
         this.player.setPlayerPosition(position);
-
     }
 
 }

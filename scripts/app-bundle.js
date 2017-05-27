@@ -338,7 +338,7 @@ define('helpers',["require", "exports"], function (require, exports) {
     exports.Perlin = Perlin;
 });
 
-define('inventory/inventory',["require", "exports", '../item/item', '../helpers'], function (require, exports, item_1, helpers_1) {
+define('inventory/inventory',["require", "exports", "../item/item", "../helpers"], function (require, exports, item_1, helpers_1) {
     "use strict";
     var Inventory = (function () {
         function Inventory() {
@@ -440,7 +440,7 @@ define('actor/health',["require", "exports"], function (require, exports) {
     exports.Health = Health;
 });
 
-define('tile/tile',["require", "exports", '../inventory/inventory'], function (require, exports, inventory_1) {
+define('tile/tile',["require", "exports", "../inventory/inventory"], function (require, exports, inventory_1) {
     "use strict";
     var Tile = (function () {
         function Tile(chunkPosition, worldPosition, tileWeight) {
@@ -460,18 +460,23 @@ define('tile/tile',["require", "exports", '../inventory/inventory'], function (r
 
 define('tile/data/tiles',["require", "exports"], function (require, exports) {
     "use strict";
+    var WATER_MAX = 0.1;
     var tiles = [
         {
             id: "grass",
             color: "#66CD00",
             symbol: 183,
             movementCost: 50,
-            weight: [{ min: 0.07, max: null }],
+            weight: { min: 0.07, max: null },
+            random: false,
+            randomPercent: 0,
             layer: 0,
         },
         {
             id: "tree",
-            weight: [{ min: 0.10, max: 0.19 }, { min: 0.23, max: 0.26 }, { min: 0.35, max: 0.40 }, { min: 0.45, max: 0.50 }],
+            weight: { min: WATER_MAX, max: 0.43 },
+            random: true,
+            randomPercent: 0.35,
             symbol: 165,
             color: '#017933',
             movementCost: -1,
@@ -479,7 +484,9 @@ define('tile/data/tiles',["require", "exports"], function (require, exports) {
         },
         {
             id: "water",
-            weight: [{ min: null, max: 0.07 }],
+            weight: { min: null, max: WATER_MAX },
+            random: false,
+            randomPercent: 0,
             symbol: 126,
             color: '#006994',
             movementCost: -1,
@@ -490,7 +497,7 @@ define('tile/data/tiles',["require", "exports"], function (require, exports) {
     exports.default = tiles;
 });
 
-define('world/chunk',["require", "exports", 'aurelia-framework', '../tile/tile', '../helpers', '../tile/data/tiles'], function (require, exports, aurelia_framework_1, tile_1, helpers_1, tiles_1) {
+define('world/chunk',["require", "exports", "aurelia-framework", "../tile/tile", "../helpers", "../tile/data/tiles"], function (require, exports, aurelia_framework_1, tile_1, helpers_1, tiles_1) {
     "use strict";
     var TileData = tiles_1.default;
     var Chunk = (function () {
@@ -504,17 +511,16 @@ define('world/chunk',["require", "exports", 'aurelia-framework', '../tile/tile',
             this.worldPosition = worldPosition ? worldPosition : new helpers_1.Vector((this.position.x * this.chunkSize.x), (position.y * this.chunkSize.y));
         }
         Chunk.prototype.seedChunk = function () {
+            var _this = this;
             if (this.position != null) {
             }
-            var weightMod = 750;
-            var weightRange = weightMod - (-Math.abs(weightMod));
-            var modX = 20;
-            var modY = 20;
+            var weightMod = 100;
+            var weightRange = weightMod * 2;
+            var modX = 140;
+            var modY = 140;
             var weightMap = [];
             TileData.forEach(function (tile) {
-                tile.weight.forEach(function (weight) {
-                    weightMap.push({ id: tile.id, weight: { min: weight.min == null ? null : (weight.min * weightRange) + (-Math.abs(weightMod)), max: weight.max == null ? null : (weight.max * weightRange) + (-Math.abs(weightMod)) }, layer: tile.layer });
-                });
+                weightMap.push({ id: tile.id, random: tile.random, randomPercent: tile.randomPercent, weight: { min: tile.weight.min == null ? null : (tile.weight.min * weightRange) - weightMod, max: tile.weight.max == null ? null : (tile.weight.max * weightRange) - weightMod }, layer: tile.layer });
             });
             weightMap = weightMap.sort(function (a, b) {
                 if (a.layer > b.layer) {
@@ -527,12 +533,25 @@ define('world/chunk',["require", "exports", 'aurelia-framework', '../tile/tile',
             });
             for (var y = 0; y < this.chunkSize.y; y++) {
                 this.tiles[y] = [];
-                var _loop_1 = function(x) {
+                var _loop_1 = function (x) {
                     var tileWeight = Math.ceil(this_1.perlin.simplex2((x + this_1.worldPosition.x) / modX, (y + this_1.worldPosition.y) / modY) * weightMod);
                     var tileType = null;
-                    var tileData = weightMap.find(function (tile) {
-                        return (tile.weight.max >= tileWeight || tile.weight.max == null)
-                            && (tile.weight.min <= tileWeight || tile.weight.min == null);
+                    var maxLayer = 1000;
+                    var currentLayer = maxLayer;
+                    var tileData;
+                    tileData = weightMap.find(function (tile) {
+                        if (((tile.weight.max >= tileWeight) || tile.weight.max == null)
+                            && ((tile.weight.min <= tileWeight) || tile.weight.min == null)) {
+                            if (tile.random === true) {
+                                var show = true;
+                                var rnd = new helpers_1.Random(_this.perlin.seedValue + tileWeight * 1000000);
+                                var num = rnd.nextInt(1, 100);
+                                show = num <= tile.randomPercent * 100;
+                                return show;
+                            }
+                            return true;
+                        }
+                        return false;
                     });
                     tileType = TileData.find(function (tile) { return tile.id == tileData.id; });
                     var tile = new tile_1.Tile(new helpers_1.Vector(x, y), new helpers_1.Vector(x + this_1.worldPosition.x, y + this_1.worldPosition.y), tileWeight);
@@ -562,7 +581,7 @@ define('world/chunk',["require", "exports", 'aurelia-framework', '../tile/tile',
     exports.Chunk = Chunk;
 });
 
-define('world/world',["require", "exports", 'aurelia-framework', './chunk', '../helpers'], function (require, exports, aurelia_framework_1, chunk_1, helpers_1) {
+define('world/world',["require", "exports", "aurelia-framework", "./chunk", "../helpers"], function (require, exports, aurelia_framework_1, chunk_1, helpers_1) {
     "use strict";
     var World = (function () {
         function World() {
@@ -641,7 +660,7 @@ define('world/world',["require", "exports", 'aurelia-framework', './chunk', '../
     exports.World = World;
 });
 
-define('actor/actor',["require", "exports", 'aurelia-framework', '../world/world', '../inventory/inventory', './health'], function (require, exports, aurelia_framework_1, world_1, inventory_1, health_1) {
+define('actor/actor',["require", "exports", "aurelia-framework", "../world/world", "../inventory/inventory", "./health"], function (require, exports, aurelia_framework_1, world_1, inventory_1, health_1) {
     "use strict";
     var Actor = (function () {
         function Actor() {
@@ -655,23 +674,40 @@ define('actor/actor',["require", "exports", 'aurelia-framework', '../world/world
     exports.Actor = Actor;
 });
 
-var __extends = (this && this.__extends) || function (d, b) {
-    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
-    function __() { this.constructor = d; }
-    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-};
-define('actor/monster',["require", "exports", './actor'], function (require, exports, actor_1) {
+var __extends = (this && this.__extends) || (function () {
+    var extendStatics = Object.setPrototypeOf ||
+        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+    return function (d, b) {
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+})();
+define('actor/monster',["require", "exports", "./actor"], function (require, exports, actor_1) {
     "use strict";
     var Monster = (function (_super) {
         __extends(Monster, _super);
         function Monster() {
-            _super.call(this);
+            return _super.call(this) || this;
         }
         Monster.prototype.attack = function () {
         };
         return Monster;
     }(actor_1.Actor));
     exports.Monster = Monster;
+});
+
+define('events/render-event',["require", "exports"], function (require, exports) {
+    "use strict";
+    var RenderEvent = (function () {
+        function RenderEvent(symbols, scaleX) {
+            this.scaleX = scaleX;
+            this.symbols = symbols;
+        }
+        return RenderEvent;
+    }());
+    exports.RenderEvent = RenderEvent;
 });
 
 var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
@@ -683,12 +719,13 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
-define('camera',["require", "exports", 'aurelia-framework', './helpers', './world/world', './world/chunk'], function (require, exports, aurelia_framework_1, helpers_1, world_1, chunk_1) {
+define('camera',["require", "exports", "aurelia-framework", "./helpers", "./world/world", "./world/chunk", "aurelia-event-aggregator", "./events/render-event"], function (require, exports, aurelia_framework_1, helpers_1, world_1, chunk_1, aurelia_event_aggregator_1, render_event_1) {
     "use strict";
     var Camera = (function () {
-        function Camera(world) {
+        function Camera(world, eventAggregator) {
+            this._eventAggregator = eventAggregator;
             this.position = null;
-            this.viewportScale = new helpers_1.Vector(80, 32);
+            this.viewportScale = new helpers_1.Vector(75, 75);
             this.scale = new helpers_1.Vector(2, 2);
             this.world = world;
             this.viewport = null;
@@ -702,34 +739,43 @@ define('camera',["require", "exports", 'aurelia-framework', './helpers', './worl
             var playerTile = this.viewport.getTileByWorldPosition(tile);
             playerTile.isPlayer = true;
         };
-        Camera.prototype.updateViewport = function (startChunk, playerPosition) {
-            this.viewport = new chunk_1.Chunk(new helpers_1.Vector(this.viewportScale.x, this.viewportScale.y), null, startChunk);
+        Camera.prototype.updateViewport = function (startPos, playerPos) {
+            this.viewport = new chunk_1.Chunk(new helpers_1.Vector(this.viewportScale.x, this.viewportScale.y), null, startPos);
             this.viewport.seedChunk();
             var playerTile = this.viewport.tiles[Math.floor(this.viewportScale.y / 2)][Math.floor(this.viewportScale.x / 2)];
             playerTile.isPlayer = true;
+            var flattendTiles = [].concat.apply([], this.viewport.tiles);
+            this._eventAggregator.publish('RenderEvent', new render_event_1.RenderEvent(this.viewport.tiles, this.viewportScale.x));
         };
-        Camera = __decorate([
-            aurelia_framework_1.inject(world_1.World), 
-            __metadata('design:paramtypes', [Object])
-        ], Camera);
         return Camera;
     }());
+    Camera = __decorate([
+        aurelia_framework_1.inject(world_1.World, aurelia_event_aggregator_1.EventAggregator),
+        __metadata("design:paramtypes", [Object, Object])
+    ], Camera);
     exports.Camera = Camera;
 });
 
-var __extends = (this && this.__extends) || function (d, b) {
-    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
-    function __() { this.constructor = d; }
-    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-};
-define('actor/player',["require", "exports", 'aurelia-framework', '../helpers', './actor', '../camera'], function (require, exports, aurelia_framework_1, helpers_1, actor_1, camera_1) {
+var __extends = (this && this.__extends) || (function () {
+    var extendStatics = Object.setPrototypeOf ||
+        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+    return function (d, b) {
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+})();
+define('actor/player',["require", "exports", "aurelia-framework", "../helpers", "./actor", "../camera"], function (require, exports, aurelia_framework_1, helpers_1, actor_1, camera_1) {
     "use strict";
     var Player = (function (_super) {
         __extends(Player, _super);
         function Player() {
-            _super.call(this);
-            this.enemy = null;
-            this.camera = aurelia_framework_1.Container.instance.get(camera_1.Camera);
+            var _this = _super.call(this) || this;
+            _this.collisionEnabled = true;
+            _this.enemy = null;
+            _this.camera = aurelia_framework_1.Container.instance.get(camera_1.Camera);
+            return _this;
         }
         Player.prototype.pickUp = function (item) {
             this.inventory.addItem(item);
@@ -737,6 +783,9 @@ define('actor/player',["require", "exports", 'aurelia-framework', '../helpers', 
         Player.prototype.attack = function () {
         };
         Player.prototype.equip = function (item) {
+        };
+        Player.prototype.toggleCollision = function () {
+            this.collisionEnabled = !this.collisionEnabled;
         };
         Player.prototype.setPlayerPosition = function (value) {
             this.camera.move(value);
@@ -781,7 +830,7 @@ define('actor/player',["require", "exports", 'aurelia-framework', '../helpers', 
                     break;
                 default: break;
             }
-            if (this.world.getTileByWorldPosition(destination).movementCost > -1) {
+            if (!this.collisionEnabled || this.world.getTileByWorldPosition(destination).movementCost > -1) {
                 this.setPlayerPosition(destination);
             }
         };
@@ -790,7 +839,7 @@ define('actor/player',["require", "exports", 'aurelia-framework', '../helpers', 
     exports.Player = Player;
 });
 
-define('item/item-module',["require", "exports", 'aurelia-framework', '../actor/player'], function (require, exports, aurelia_framework_1, player_1) {
+define('item/item-module',["require", "exports", "aurelia-framework", "../actor/player"], function (require, exports, aurelia_framework_1, player_1) {
     "use strict";
     var ItemModule = (function () {
         function ItemModule() {
@@ -828,7 +877,7 @@ define('item/stats/weapon-stats',["require", "exports"], function (require, expo
     exports.WeaponStats = WeaponStats;
 });
 
-define('item/item',["require", "exports", 'aurelia-dependency-injection', '../actor/player', './stats/item-stats', './stats/weapon-stats'], function (require, exports, aurelia_dependency_injection_1, player_1, item_stats_1, weapon_stats_1) {
+define('item/item',["require", "exports", "aurelia-dependency-injection", "../actor/player", "./stats/item-stats", "./stats/weapon-stats"], function (require, exports, aurelia_dependency_injection_1, player_1, item_stats_1, weapon_stats_1) {
     "use strict";
     var Item = (function () {
         function Item() {
@@ -899,7 +948,7 @@ define('item/data/items',["require", "exports"], function (require, exports) {
             "description": "This is a description",
             "category": "WEAPON",
             "module": "hunting-knife"
-        }
+        },
     ];
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.default = items;
@@ -984,7 +1033,7 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
-define('input/input',["require", "exports", 'aurelia-framework', '../actor/player'], function (require, exports, aurelia_framework_1, player_1) {
+define('input/input',["require", "exports", "aurelia-framework", "../actor/player"], function (require, exports, aurelia_framework_1, player_1) {
     "use strict";
     var Input = (function () {
         function Input(player) {
@@ -1031,12 +1080,12 @@ define('input/input',["require", "exports", 'aurelia-framework', '../actor/playe
             console.log(event);
             console.log(this.player.position);
         };
-        Input = __decorate([
-            aurelia_framework_1.inject(player_1.Player), 
-            __metadata('design:paramtypes', [Object])
-        ], Input);
         return Input;
     }());
+    Input = __decorate([
+        aurelia_framework_1.inject(player_1.Player),
+        __metadata("design:paramtypes", [Object])
+    ], Input);
     exports.Input = Input;
 });
 
@@ -1049,7 +1098,7 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
-define('game',["require", "exports", 'aurelia-framework', './actor/player', './item/item-context', './world/world', './helpers', './input/input', './camera'], function (require, exports, aurelia_framework_1, player_1, item_context_1, world_1, helpers_1, input_1, camera_1) {
+define('game',["require", "exports", "aurelia-framework", "./actor/player", "./item/item-context", "./world/world", "./helpers", "./input/input", "./camera"], function (require, exports, aurelia_framework_1, player_1, item_context_1, world_1, helpers_1, input_1, camera_1) {
     "use strict";
     var Game = (function () {
         function Game(player, world, itemContext, input, camera) {
@@ -1063,15 +1112,17 @@ define('game',["require", "exports", 'aurelia-framework', './actor/player', './i
             this.input = input;
             this.maxWorldSize = 200;
             this.camera = camera;
+        }
+        Game.prototype.init = function () {
             var position = new helpers_1.Vector((this.world.chunkSize.x * this.maxWorldSize) / 2, (this.world.chunkSize.y * this.maxWorldSize) / 2);
             this.player.setPlayerPosition(position);
-        }
-        Game = __decorate([
-            aurelia_framework_1.inject(player_1.Player, world_1.World, item_context_1.ItemContext, input_1.Input, camera_1.Camera), 
-            __metadata('design:paramtypes', [player_1.Player, world_1.World, item_context_1.ItemContext, input_1.Input, camera_1.Camera])
-        ], Game);
+        };
         return Game;
     }());
+    Game = __decorate([
+        aurelia_framework_1.inject(player_1.Player, world_1.World, item_context_1.ItemContext, input_1.Input, camera_1.Camera),
+        __metadata("design:paramtypes", [player_1.Player, world_1.World, item_context_1.ItemContext, input_1.Input, camera_1.Camera])
+    ], Game);
     exports.Game = Game;
 });
 
@@ -1084,13 +1135,19 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
-define('app',["require", "exports", 'aurelia-framework', './game'], function (require, exports, aurelia_framework_1, game_1) {
+define('app',["require", "exports", "aurelia-framework", "./game", "aurelia-event-aggregator"], function (require, exports, aurelia_framework_1, game_1, aurelia_event_aggregator_1) {
     "use strict";
     var App = (function () {
-        function App(game) {
+        function App(game, eventAggregator) {
             this.itemLifespan = 0;
+            this._eventAggregator = eventAggregator;
             this.game = game;
         }
+        App.prototype.attached = function () {
+            this.ctx = this.canvas.getContext("2d");
+            this.draw();
+            this.game.init();
+        };
         App.prototype.AddItem = function (item) {
             this.game.player.inventory.addItem(item);
         };
@@ -1101,12 +1158,32 @@ define('app',["require", "exports", 'aurelia-framework', './game'], function (re
             var i = this.game.player.inventory.getItemById(item.id);
             i.use();
         };
-        App = __decorate([
-            aurelia_framework_1.inject(game_1.Game), 
-            __metadata('design:paramtypes', [game_1.Game])
-        ], App);
+        App.prototype.toggleCollision = function () {
+            this.game.player.toggleCollision();
+        };
+        App.prototype.draw = function () {
+            var _this = this;
+            this._eventAggregator.subscribe('RenderEvent', function (event) {
+                _this.ctx.clearRect(0, 0, _this.canvas.width, _this.canvas.height);
+                var cellSize = 10;
+                _this.ctx.lineWidth = 20;
+                _this.ctx.font = '14px verdana';
+                for (var y = 0; y < event.symbols.length; y++) {
+                    var row = event.symbols[y];
+                    for (var x = 0; x < row.length; x++) {
+                        _this.ctx.fillStyle = event.symbols[y][x].isPlayer ? "blue" : event.symbols[y][x].color;
+                        var symbol = event.symbols[y][x].isPlayer ? "@" : event.symbols[y][x].symbol;
+                        _this.ctx.fillText(symbol, (x * cellSize) + (cellSize / 2), (y * cellSize) + (cellSize / 2));
+                    }
+                }
+            });
+        };
         return App;
     }());
+    App = __decorate([
+        aurelia_framework_1.inject(game_1.Game, aurelia_event_aggregator_1.EventAggregator),
+        __metadata("design:paramtypes", [game_1.Game, aurelia_event_aggregator_1.EventAggregator])
+    ], App);
     exports.App = App;
 });
 
@@ -1119,11 +1196,16 @@ define('environment',["require", "exports"], function (require, exports) {
     };
 });
 
-var __extends = (this && this.__extends) || function (d, b) {
-    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
-    function __() { this.constructor = d; }
-    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-};
+var __extends = (this && this.__extends) || (function () {
+    var extendStatics = Object.setPrototypeOf ||
+        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+    return function (d, b) {
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+})();
 var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
     if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
@@ -1133,29 +1215,34 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
-define('item/modules/knife',["require", "exports", '../item-module', 'aurelia-framework'], function (require, exports, item_module_1, aurelia_framework_1) {
+define('item/modules/knife',["require", "exports", "../item-module", "aurelia-framework"], function (require, exports, item_module_1, aurelia_framework_1) {
     "use strict";
     var Knife = (function (_super) {
         __extends(Knife, _super);
         function Knife() {
-            _super.call(this);
+            return _super.call(this) || this;
         }
         Knife.prototype.wield = function () {
         };
-        Knife = __decorate([
-            aurelia_framework_1.noView, 
-            __metadata('design:paramtypes', [])
-        ], Knife);
         return Knife;
     }(item_module_1.ItemModule));
+    Knife = __decorate([
+        aurelia_framework_1.noView,
+        __metadata("design:paramtypes", [])
+    ], Knife);
     exports.Knife = Knife;
 });
 
-var __extends = (this && this.__extends) || function (d, b) {
-    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
-    function __() { this.constructor = d; }
-    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-};
+var __extends = (this && this.__extends) || (function () {
+    var extendStatics = Object.setPrototypeOf ||
+        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+    return function (d, b) {
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+})();
 var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
     if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
@@ -1165,12 +1252,12 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
-define('item/modules/hunting-knife',["require", "exports", './knife', 'aurelia-framework'], function (require, exports, knife_1, aurelia_framework_1) {
+define('item/modules/hunting-knife',["require", "exports", "./knife", "aurelia-framework"], function (require, exports, knife_1, aurelia_framework_1) {
     "use strict";
     var HuntingKnife = (function (_super) {
         __extends(HuntingKnife, _super);
         function HuntingKnife() {
-            _super.call(this);
+            return _super.call(this) || this;
         }
         HuntingKnife.prototype.wield = function () {
             _super.prototype.wield.call(this);
@@ -1179,26 +1266,31 @@ define('item/modules/hunting-knife',["require", "exports", './knife', 'aurelia-f
             _super.prototype.use.call(this);
             this.player.health.damage("head", 5);
         };
-        HuntingKnife = __decorate([
-            aurelia_framework_1.noView, 
-            __metadata('design:paramtypes', [])
-        ], HuntingKnife);
         return HuntingKnife;
     }(knife_1.Knife));
+    HuntingKnife = __decorate([
+        aurelia_framework_1.noView,
+        __metadata("design:paramtypes", [])
+    ], HuntingKnife);
     exports.HuntingKnife = HuntingKnife;
 });
 
-var __extends = (this && this.__extends) || function (d, b) {
-    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
-    function __() { this.constructor = d; }
-    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-};
-define('item/modules/bandage',["require", "exports", '../item-module'], function (require, exports, item_module_1) {
+var __extends = (this && this.__extends) || (function () {
+    var extendStatics = Object.setPrototypeOf ||
+        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+    return function (d, b) {
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+})();
+define('item/modules/bandage',["require", "exports", "../item-module"], function (require, exports, item_module_1) {
     "use strict";
     var Bandage = (function (_super) {
         __extends(Bandage, _super);
         function Bandage() {
-            _super.call(this);
+            return _super.call(this) || this;
         }
         Bandage.prototype.use = function () {
             this.player.health.heal('head', 3);
@@ -1208,7 +1300,7 @@ define('item/modules/bandage',["require", "exports", '../item-module'], function
     exports.Bandage = Bandage;
 });
 
-define('item/item-module-containers',["require", "exports", 'aurelia-framework', './modules/hunting-knife', './modules/knife', './modules/bandage'], function (require, exports, aurelia_framework_1, hunting_knife_1, knife_1, bandage_1) {
+define('item/item-module-containers',["require", "exports", "aurelia-framework", "./modules/hunting-knife", "./modules/knife", "./modules/bandage"], function (require, exports, aurelia_framework_1, hunting_knife_1, knife_1, bandage_1) {
     "use strict";
     function RegisterItemModules() {
         aurelia_framework_1.Container.instance.registerInstance('hunting-knife', new hunting_knife_1.HuntingKnife());
@@ -1218,7 +1310,7 @@ define('item/item-module-containers',["require", "exports", 'aurelia-framework',
     exports.RegisterItemModules = RegisterItemModules;
 });
 
-define('main',["require", "exports", './environment', './item/item-module-containers'], function (require, exports, environment_1, item_module_containers_1) {
+define('main',["require", "exports", "./environment", "./item/item-module-containers"], function (require, exports, environment_1, item_module_containers_1) {
     "use strict";
     Promise.config({
         warnings: {
@@ -1243,6 +1335,7 @@ define('main',["require", "exports", './environment', './item/item-module-contai
 
 define('input/keybinds',["require", "exports"], function (require, exports) {
     "use strict";
+    var Keybinds;
     (function (Keybinds) {
         Keybinds[Keybinds["A"] = 0] = "A";
         Keybinds[Keybinds["NUM1"] = 1] = "NUM1";
@@ -1255,8 +1348,7 @@ define('input/keybinds',["require", "exports"], function (require, exports) {
         Keybinds[Keybinds["NUM8"] = 8] = "NUM8";
         Keybinds[Keybinds["NUM9"] = 9] = "NUM9";
         Keybinds[Keybinds["NUM0"] = 10] = "NUM0";
-    })(exports.Keybinds || (exports.Keybinds = {}));
-    var Keybinds = exports.Keybinds;
+    })(Keybinds = exports.Keybinds || (exports.Keybinds = {}));
 });
 
 define('resources/index',["require", "exports"], function (require, exports) {
@@ -1276,6 +1368,5 @@ define('tile/modules/tree',["require", "exports"], function (require, exports) {
     exports.Tree = Tree;
 });
 
-define('text!app.html', ['module'], function(module) { module.exports = "<template>\r\n    <div id=\"map\" style=\"background-color:black;font-family: 'Courier New', Courier, monospace; float:left;\">\r\n        <div repeat.for=\"tileY of game.camera.viewport.tiles\">\r\n            <label repeat.for=\"tileX of tileY\" style=\"background-color:black; width:10px; text-align:center;color:${tileX.isPlayer ? 'blue' : tileX.color}; font-weight:bold;\"\r\n                title=\"${tileX.worldPosition.x} ${tileX.worldPosition.y}\">${tileX.isPlayer ? '@' : tileX.symbol}</label>\r\n        </div>\r\n    </div>\r\n    <div id=\"ui\">\r\n        <div style=\"display: inline-block;\">\r\n            <h2>Items</h2>\r\n            <ul>\r\n                <li repeat.for=\"item of game.itemContext.items\" click.delegate=\"AddItem(item)\">\r\n                    ${item.title}\r\n                </li>\r\n            </ul>\r\n            <h2>Inventory</h2>\r\n            <div>\r\n                <div>\r\n                    <div>Weight: ${game.player.inventory.currentWeight}/${game.player.inventory.weightCap}</div>\r\n                    <div>Volume: ${game.player.inventory.currentVolume}/${game.player.inventory.volumeCap}</div>\r\n                </div>\r\n                <div style=\"display: inline-block\">\r\n                    <ul>\r\n                        <li repeat.for=\"item of game.player.inventory.items\">\r\n                            <div click.delegate=\"RemoveItem(item)\">${item.title}</div>\r\n                            <div click.delegate=\"UseItem(item)\">Use</div>\r\n                        </li>\r\n                    </ul>\r\n                </div>\r\n            </div>\r\n        </div>\r\n        <div style=\"display: inline-block\">\r\n            <ul>\r\n                <li repeat.for=\"part of game.player.health.parts\" click.delegate=\"RemoveItem(item)\">\r\n                    ${item.title}\r\n                    <div>${part.description}:${part.value}</div>\r\n                </li>\r\n            </ul>\r\n        </div>\r\n    </div>\r\n</template>"; });
-define('text!site.css', ['module'], function(module) { module.exports = "body {\r\n\r\n}\r\n\r\n#ui ul li {\r\n    list-style: none;\r\n}"; });
+define('text!app.html', ['module'], function(module) { module.exports = "<template>\r\n    <div id=\"map\" style=\"background-color:black;font-family: 'Courier New', Courier, monospace; float:left;\">\r\n        <!--<div repeat.for=\"tileY of game.camera.viewport.tiles\">\r\n            <label repeat.for=\"tileX of tileY\" style=\"background-color:black; width:10px; text-align:center;color:${tileX.isPlayer ? 'blue' : tileX.color}; font-weight:bold;\"\r\n                title=\"${tileX.worldPosition.x} ${tileX.worldPosition.y}\">${tileX.isPlayer ? '@' : tileX.symbol}</label>\r\n        </div>-->\r\n\r\n        <canvas ref=\"canvas\" width=\"${game.maxWorldSize * 4}\" height=\"${game.maxWorldSize * 4}\"> Your browser does not support canvas.</canvas>\r\n\r\n    </div>\r\n    <div id=\"ui\">\r\n        <div style=\"display: inline-block;\">\r\n            <h2>Items</h2>\r\n            <ul>\r\n                <li repeat.for=\"item of game.itemContext.items\" click.delegate=\"AddItem(item)\">\r\n                    ${item.title}\r\n                </li>\r\n            </ul>\r\n            <h2>Inventory</h2>\r\n            <div>\r\n                <div>\r\n                    <div>Weight: ${game.player.inventory.currentWeight}/${game.player.inventory.weightCap}</div>\r\n                    <div>Volume: ${game.player.inventory.currentVolume}/${game.player.inventory.volumeCap}</div>\r\n                </div>\r\n                <div style=\"display: inline-block\">\r\n                    <ul>\r\n                        <li repeat.for=\"item of game.player.inventory.items\">\r\n                            <div click.delegate=\"RemoveItem(item)\">${item.title}</div>\r\n                            <div click.delegate=\"UseItem(item)\">Use</div>\r\n                        </li>\r\n                    </ul>\r\n                </div>\r\n            </div>\r\n        </div>\r\n        <div style=\"display: inline-block\">\r\n            <ul>\r\n                <li repeat.for=\"part of game.player.health.parts\" click.delegate=\"RemoveItem(item)\">\r\n                    ${item.title}\r\n                    <div>${part.description}:${part.value}</div>\r\n                </li>\r\n            </ul>\r\n        </div>\r\n        <button click.delegate=\"toggleCollision()\">Collision</button>\r\n    </div>\r\n</template>"; });
 //# sourceMappingURL=app-bundle.js.map

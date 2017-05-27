@@ -1,9 +1,12 @@
 <template>
     <div id="map" style="background-color:black;font-family: 'Courier New', Courier, monospace; float:left;">
-        <div repeat.for="tileY of game.camera.viewport.tiles">
+        <!--<div repeat.for="tileY of game.camera.viewport.tiles">
             <label repeat.for="tileX of tileY" style="background-color:black; width:10px; text-align:center;color:${tileX.isPlayer ? 'blue' : tileX.color}; font-weight:bold;"
                 title="${tileX.worldPosition.x} ${tileX.worldPosition.y}">${tileX.isPlayer ? '@' : tileX.symbol}</label>
-        </div>
+        </div>-->
+
+        <canvas ref="canvas" width="${game.maxWorldSize * 4}" height="${game.maxWorldSize * 4}"> Your browser does not support canvas.</canvas>
+
     </div>
     <div id="ui">
         <div style="display: inline-block;">
@@ -37,5 +40,6 @@
                 </li>
             </ul>
         </div>
+        <button click.delegate="toggleCollision()">Collision</button>
     </div>
 </template>

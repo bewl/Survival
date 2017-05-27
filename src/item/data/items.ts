@@ -12,7 +12,8 @@ let items: any = [
         "description": "This is a description",
         "category": "WEAPON",
         "module": "hunting-knife"
-    }
+    },
+    
 ];
 
 export default items;

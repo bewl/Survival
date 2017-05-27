@@ -44,6 +44,7 @@ export class World {
 
         return chunk;
     }
+    
     getChunk(position: Vector): Chunk {
         let chunk: Chunk = null;
 

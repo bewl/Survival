@@ -12,7 +12,7 @@ export class Player extends Actor {
     public enemy: Monster;
     public world: World;
     public camera: Camera;
-
+    collisionEnabled: boolean = true;
     constructor() {
         super();
         this.enemy = null;
@@ -31,7 +31,9 @@ export class Player extends Actor {
     equip(item: Item) {
 
     }
-
+toggleCollision() {
+    this.collisionEnabled = !this.collisionEnabled;
+  }
     setPlayerPosition(value: Vector) {
         this.camera.move(value);
         this.position = value;
@@ -79,7 +81,7 @@ export class Player extends Actor {
             default: break;
         }
 
-        if (this.world.getTileByWorldPosition(destination).movementCost > -1) {
+        if (!this.collisionEnabled || this.world.getTileByWorldPosition(destination).movementCost > -1) {
             this.setPlayerPosition(destination);
             //48this.camera.setIsPlayer(destination);
         }

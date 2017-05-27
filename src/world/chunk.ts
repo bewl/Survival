@@ -25,18 +25,17 @@ export class Chunk {
         if (this.position != null) {
 
         }
-
-        let weightMod = 750;
-        let weightRange = weightMod - (-Math.abs(weightMod));
-        let modX = 20;
-        let modY = 20;
+        //WRITE SOME DAMN COMMENTS YOU IDIOT WTF IS THIS 
+        let weightMod = 100; //modifier to perlin noise result
+        let weightRange = weightMod * 2; //used to modify normalized weight ranges for tiles to correspond to the modified perline noise result
+        let modX = 140;
+        let modY = 140;
 
         let weightMap = [];
 
         TileData.forEach(tile => {
-            tile.weight.forEach(weight => {
-                weightMap.push({ id: tile.id, weight: {min: weight.min == null ? null : (weight.min * weightRange) + (-Math.abs(weightMod)), max: weight.max == null ? null : (weight.max * weightRange) + (-Math.abs(weightMod))}, layer: tile.layer });
-            });
+            //We are modifying the weight of the tile to correspond with the weightMod being applied to the perlin noise result.
+            weightMap.push({ id: tile.id, random: tile.random, randomPercent: tile.randomPercent, weight: { min: tile.weight.min == null ? null : (tile.weight.min * weightRange) - weightMod, max: tile.weight.max == null ? null : (tile.weight.max * weightRange) - weightMod }, layer: tile.layer });
         });
 
         weightMap = weightMap.sort((a, b) => {
@@ -53,14 +52,36 @@ export class Chunk {
             for (let x = 0; x < this.chunkSize.x; x++) {
 
                 let tileWeight = Math.ceil(this.perlin.simplex2((x + this.worldPosition.x) / modX, (y + this.worldPosition.y) / modY) * weightMod);
-                
+
                 let tileType = null;
 
+                let maxLayer = 1000;
+                let currentLayer = maxLayer;
                 //TODO: This could be optimized
-                let tileData = weightMap.find(tile => {
-                        return (tile.weight.max >= tileWeight || tile.weight.max == null)
-                            && (tile.weight.min <= tileWeight || tile.weight.min == null);
+                let tileData;
+                tileData = weightMap.find(tile => {
+                    //tileweight falls in tile weight range
+                    if (((tile.weight.max >= tileWeight) || tile.weight.max == null)
+                        && ((tile.weight.min <= tileWeight) || tile.weight.min == null)) {
+                        //is this tile randomized to show?
+                        if (tile.random === true) {
+                            let show = true;
+                            let rnd = new Random(this.perlin.seedValue + tileWeight * 1000000);
+                            let num = rnd.nextInt(1, 100);
+                            show = num <= tile.randomPercent * 100;
+                            //If we are not going to randomly show the tile then
+                            //We need to go down to the NEXT layer, and not the next decrement of the same layer 
+                            //(e.g. layer 2.1 is not showing, we need to go to Layer 0.* and not Layer 1.0)
+
+                            return show;
+                        }
+                            return true;
+                    }
+
+                    return false;
+
                 });
+
                 tileType = TileData.find(tile => tile.id == tileData.id);
 
                 let tile = new Tile(new Vector(x, y), new Vector(x + this.worldPosition.x, y + this.worldPosition.y), tileWeight);
