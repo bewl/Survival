@@ -2,9 +2,10 @@ import { inject } from 'aurelia-framework';
 import { Player } from './actor/player';
 import { ItemContext } from './item/item-context';
 import { World } from './world/world';
-import { Vector } from './helpers';
+import { Vector2 } from './helpers';
 import { Input } from './input/input';
 import { Camera} from './camera';
+import { GenerateHashCode } from './helpers'
 
 @inject(Player, World, ItemContext, Input, Camera)
 export class Game {
@@ -12,6 +13,7 @@ export class Game {
     itemContext: ItemContext = null;
     world: World = null;
     input: Input = null;
+    seed: string = "Test seed";
     maxWorldSize: number;
     camera: Camera;
     constructor(player: Player, world: World, itemContext: ItemContext, input: Input, camera: Camera) {
@@ -25,9 +27,11 @@ export class Game {
     }
 
     init() {
-        let position = new Vector((this.world.chunkSize.x * this.maxWorldSize) / 2, (this.world.chunkSize.y * this.maxWorldSize) / 2);
+        this.world.generateSeed(GenerateHashCode(this.seed));
+        let position = new Vector2((this.world.chunkSize.x * this.maxWorldSize) / 2, (this.world.chunkSize.y * this.maxWorldSize) / 2);
         
         this.player.setPlayerPosition(position);
     }
 
 }
+

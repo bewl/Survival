@@ -3,20 +3,22 @@ import { Inventory } from '../inventory/inventory';
 import { Health } from './health';
 import { Item } from '../item/item';
 import { Monster } from './monster';
-import { Vector } from '../helpers';
+import { Vector2 } from '../helpers';
 import { World } from '../world/world';
 import { Actor } from './actor';
-import { Camera } from '../camera';
+import { EventAggregator } from 'aurelia-event-aggregator';
+import { PlayerMovedEvent } from '../events/player-moved-event';
 
 export class Player extends Actor {
     public enemy: Monster;
     public world: World;
-    public camera: Camera;
-    collisionEnabled: boolean = true;
+    public collisionEnabled: boolean = true;
+    public eventAggregator: EventAggregator;
+
     constructor() {
         super();
         this.enemy = null;
-        this.camera = Container.instance.get(Camera);
+        this.eventAggregator = Container.instance.get(EventAggregator);
     }
 
     pickUp(item: Item) {
@@ -31,17 +33,18 @@ export class Player extends Actor {
     equip(item: Item) {
 
     }
-toggleCollision() {
-    this.collisionEnabled = !this.collisionEnabled;
-  }
-    setPlayerPosition(value: Vector) {
-        this.camera.move(value);
+    toggleCollision() {
+        this.collisionEnabled = !this.collisionEnabled;
+    }
+    setPlayerPosition(value: Vector2) {
+        //this.camera.translate(value);
+        this.eventAggregator.publish('PlayerMoved', new PlayerMovedEvent(value))
         this.position = value;
     }
 
     move(direction: string, distance: number) {
 
-        let destination = new Vector();
+        let destination = new Vector2();
         let currentX = this.position.x;
         let currentY = this.position.y;
 
@@ -83,7 +86,6 @@ toggleCollision() {
 
         if (!this.collisionEnabled || this.world.getTileByWorldPosition(destination).movementCost > -1) {
             this.setPlayerPosition(destination);
-            //48this.camera.setIsPlayer(destination);
         }
     }
 }

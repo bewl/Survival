@@ -1,4 +1,4 @@
-import { Vector } from '../helpers';
+import { Vector2 } from '../helpers';
 import { Inventory } from '../inventory/inventory';
 
 export class Tile {
@@ -7,12 +7,12 @@ export class Tile {
     public movementCost: number;
     public symbol: string;
     public color: string;
-    public chunkPosition: Vector;
-    public worldPosition: Vector;
+    public chunkPosition: Vector2;
+    public worldPosition: Vector2;
     public isPlayer: boolean;
     public tileWeight: number;
 
-    constructor(chunkPosition: Vector, worldPosition: Vector, tileWeight: number) {
+    constructor(chunkPosition: Vector2, worldPosition: Vector2, tileWeight: number) {
         this.worldPosition = worldPosition;
         this.chunkPosition = chunkPosition;
         this.inventory = new Inventory();

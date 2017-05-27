@@ -53,8 +53,8 @@ export class Input {
                 this.movePlayer('ne');
                 break;
         }
-        console.log(event);
-        console.log(this.player.position);
+        //console.log(event);
+        //console.log(this.player.position);
 
 
     }

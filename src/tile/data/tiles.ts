@@ -12,9 +12,9 @@ let tiles = [
     },
     {
         id: "tree",
-        weight: {min: WATER_MAX, max: 0.43},
+        weight: {min: WATER_MAX + .003, max: 0.43},
         random: true,
-        randomPercent: 0.35,
+        randomPercent: 0.44,
         symbol: 165,
         color: '#017933',
         movementCost: -1,

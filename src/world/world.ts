@@ -2,12 +2,12 @@ import { inject, Container } from 'aurelia-framework';
 import { Chunk } from './chunk';
 import { Tile } from '../tile/tile';
 
-import { Perlin, Random, Vector } from '../helpers';
+import { Perlin, Random, Vector2 } from '../helpers';
 
 export class World {
     public chunks: Chunk[][];
-    public worldSize: Vector;
-    public chunkSize: Vector;
+    public worldSize: Vector2;
+    public chunkSize: Vector2;
     public seed: number;
     private perlin: Perlin;
     playerTile: Tile;
@@ -16,17 +16,17 @@ export class World {
     constructor() {
 
         this.perlin = Container.instance.get(Perlin) as Perlin;
-        this.worldSize = new Vector(2, 1);
-        this.chunkSize = new Vector(50, 38); //TODO: put this in a setting so other modules can access it
+        this.worldSize = new Vector2(2, 1);
+        this.chunkSize = new Vector2(50, 38); //TODO: put this in a setting so other modules can access it
         this.chunks = [];
         this.seed = new Random(Math.floor(Math.random() * 32000)).nextDouble();
         this.playerTile = null;
 
-        this.generateSeed();
+        //this.generateSeed();
     }
 
-    generateSeed() {
-        this.perlin.seed(this.seed);
+    generateSeed(seed: number = null) {
+        this.perlin.seed(seed == null ? this.seed : seed);
 
         // for (let y = 0; y < this.worldSize.y; y++) {
         //     this.chunks[y] = [];
@@ -36,8 +36,8 @@ export class World {
         // }
     }
 
-    getChunkPositionFromTilePosition(position: Vector): Vector {
-        let chunk = new Vector();
+    getChunkPositionFromTilePosition(position: Vector2): Vector2 {
+        let chunk = new Vector2();
 
         chunk.x = Math.floor(position.x / this.chunkSize.x);
         chunk.y = Math.floor(position.y / this.chunkSize.y);
@@ -45,14 +45,14 @@ export class World {
         return chunk;
     }
     
-    getChunk(position: Vector): Chunk {
+    getChunk(position: Vector2): Chunk {
         let chunk: Chunk = null;
 
         if (this.chunks[position.y] && this.chunks[position.y][position.x]) {
             chunk = this.chunks[position.y][position.x];
         } else {
 
-            chunk = new Chunk(new Vector(this.chunkSize.x, this.chunkSize.y), new Vector(position.x, position.y));
+            chunk = new Chunk(new Vector2(this.chunkSize.x, this.chunkSize.y), new Vector2(position.x, position.y));
             chunk.seedChunk();
 
             if (!this.chunks[position.y])
@@ -64,7 +64,7 @@ export class World {
         return chunk;
     }
 
-    getChunks(start: Vector, end: Vector): Chunk[][] {
+    getChunks(start: Vector2, end: Vector2): Chunk[][] {
         let numChunksX = end.x - start.x;
         let numChunksY = start.y - end.y;
 
@@ -77,7 +77,7 @@ export class World {
                     chunks[y][x] = this.chunks[y][x];
                 } else {
 
-                    chunks[y][x] = new Chunk(new Vector(this.chunkSize.x, this.chunkSize.y), new Vector(x, y));
+                    chunks[y][x] = new Chunk(new Vector2(this.chunkSize.x, this.chunkSize.y), new Vector2(x, y));
                     chunks[y][x].seedChunk();
 
                     if (!this.chunks[y])
@@ -93,7 +93,7 @@ export class World {
 
     
 
-    getTileByWorldPosition(position: Vector) {
+    getTileByWorldPosition(position: Vector2) {
         let targetChunkX = Math.floor(position.x / this.chunkSize.x)
         let targetChunkY = Math.floor(position.y / this.chunkSize.y);
         let targetTileX = Math.floor(position.x % this.chunkSize.x);
@@ -109,7 +109,7 @@ export class World {
         }
 
         if (targetChunk === null) {
-            targetChunk = this.getChunk(new Vector(targetChunkX, targetChunkY));
+            targetChunk = this.getChunk(new Vector2(targetChunkX, targetChunkY));
         }
 
         targetTile = targetChunk.tiles[targetTileY][targetTileX];

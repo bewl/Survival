@@ -40,6 +40,13 @@
                 </li>
             </ul>
         </div>
-        <button click.delegate="toggleCollision()">Collision</button>
+        <div>
+        <button click.delegate="toggleCollision()" innerhtml.bind="game.player.collisionEnabled ? 'Collision On' : 'Collision Off'" >Collision</button>
+        <div>
+            <label>seed</label>
+            <input type="text" value.bind="game.seed" />
+            <button click.delegate="init()">Generate</button>
+        </div>
+        </div>
     </div>
 </template>

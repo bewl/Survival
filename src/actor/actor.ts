@@ -2,13 +2,13 @@ import { Container } from 'aurelia-framework';
 import { World } from '../world/world';
 import { Inventory } from '../inventory/inventory';
 import { Health } from './health';
-import { Vector } from '../helpers';
+import { Vector2 } from '../helpers';
 
 export class Actor {
     public world: World;
     public inventory: Inventory = null;
     public health: Health;
-    public position: Vector;
+    public position: Vector2;
     public symbol: string;
     public color: string;
 

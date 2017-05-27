@@ -1,5 +1,20 @@
 define('helpers',["require", "exports"], function (require, exports) {
     "use strict";
+    function GenerateHashCode(phrase) {
+        var hash = 0;
+        var i;
+        var chr;
+        if (phrase.length === 0)
+            return hash;
+        for (i = 0; i < phrase.length; i++) {
+            chr = phrase.charCodeAt(i);
+            hash = ((hash << 5) - hash) + chr;
+            hash |= 0;
+        }
+        return hash;
+    }
+    exports.GenerateHashCode = GenerateHashCode;
+    ;
     function GetEnumElements(e) {
         return Object.keys(e).map(function (a) { return e[a]; }).filter(function (a) { return typeof a === 'string'; });
     }
@@ -16,18 +31,18 @@ define('helpers',["require", "exports"], function (require, exports) {
         return Guid;
     }());
     exports.Guid = Guid;
-    var Vector = (function () {
-        function Vector(x, y) {
+    var Vector2 = (function () {
+        function Vector2(x, y) {
             this.x = x || 0;
             this.y = y || 0;
         }
-        Vector.prototype.dot2 = function (x, y) {
+        Vector2.prototype.dot2 = function (x, y) {
             return this.x * x + this.y * y;
         };
         ;
-        return Vector;
+        return Vector2;
     }());
-    exports.Vector = Vector;
+    exports.Vector2 = Vector2;
     var Vector3 = (function () {
         function Vector3(x, y, z) {
             this.x = x || 0;
@@ -474,9 +489,9 @@ define('tile/data/tiles',["require", "exports"], function (require, exports) {
         },
         {
             id: "tree",
-            weight: { min: WATER_MAX, max: 0.43 },
+            weight: { min: WATER_MAX + .003, max: 0.43 },
             random: true,
-            randomPercent: 0.35,
+            randomPercent: 0.44,
             symbol: 165,
             color: '#017933',
             movementCost: -1,
@@ -502,25 +517,35 @@ define('world/chunk',["require", "exports", "aurelia-framework", "../tile/tile",
     var TileData = tiles_1.default;
     var Chunk = (function () {
         function Chunk(chunkSize, position, worldPosition) {
-            if (position === void 0) { position = new helpers_1.Vector(); }
+            if (position === void 0) { position = new helpers_1.Vector2(); }
             this.position = null;
             this.chunkSize = chunkSize;
             this.perlin = aurelia_framework_1.Container.instance.get(helpers_1.Perlin);
             this.tiles = [];
             this.position = position;
-            this.worldPosition = worldPosition ? worldPosition : new helpers_1.Vector((this.position.x * this.chunkSize.x), (position.y * this.chunkSize.y));
+            this.worldPosition = worldPosition ? worldPosition : new helpers_1.Vector2((this.position.x * this.chunkSize.x), (position.y * this.chunkSize.y));
         }
         Chunk.prototype.seedChunk = function () {
             var _this = this;
             if (this.position != null) {
             }
             var weightMod = 100;
-            var weightRange = weightMod * 2;
-            var modX = 140;
-            var modY = 140;
+            var weightRange = weightMod * 3.0;
+            var perlinDivisor = 20;
             var weightMap = [];
             TileData.forEach(function (tile) {
-                weightMap.push({ id: tile.id, random: tile.random, randomPercent: tile.randomPercent, weight: { min: tile.weight.min == null ? null : (tile.weight.min * weightRange) - weightMod, max: tile.weight.max == null ? null : (tile.weight.max * weightRange) - weightMod }, layer: tile.layer });
+                var min = tile.weight.min == null ? null : (tile.weight.min * weightRange) - weightMod;
+                var max = tile.weight.max == null ? null : (tile.weight.max * weightRange) - weightMod;
+                weightMap.push({
+                    id: tile.id,
+                    random: tile.random,
+                    randomPercent: tile.randomPercent,
+                    layer: tile.layer,
+                    weight: {
+                        min: min,
+                        max: max
+                    }
+                });
             });
             weightMap = weightMap.sort(function (a, b) {
                 if (a.layer > b.layer) {
@@ -534,7 +559,7 @@ define('world/chunk',["require", "exports", "aurelia-framework", "../tile/tile",
             for (var y = 0; y < this.chunkSize.y; y++) {
                 this.tiles[y] = [];
                 var _loop_1 = function (x) {
-                    var tileWeight = Math.ceil(this_1.perlin.simplex2((x + this_1.worldPosition.x) / modX, (y + this_1.worldPosition.y) / modY) * weightMod);
+                    var tileWeight = Math.ceil(this_1.perlin.simplex2((x + this_1.worldPosition.x) / perlinDivisor, (y + this_1.worldPosition.y) / perlinDivisor) * weightMod);
                     var tileType = null;
                     var maxLayer = 1000;
                     var currentLayer = maxLayer;
@@ -544,7 +569,7 @@ define('world/chunk',["require", "exports", "aurelia-framework", "../tile/tile",
                             && ((tile.weight.min <= tileWeight) || tile.weight.min == null)) {
                             if (tile.random === true) {
                                 var show = true;
-                                var rnd = new helpers_1.Random(_this.perlin.seedValue + tileWeight * 1000000);
+                                var rnd = new helpers_1.Random((_this.perlin.seedValue * 100) + tileWeight * 10000000);
                                 var num = rnd.nextInt(1, 100);
                                 show = num <= tile.randomPercent * 100;
                                 return show;
@@ -554,7 +579,7 @@ define('world/chunk',["require", "exports", "aurelia-framework", "../tile/tile",
                         return false;
                     });
                     tileType = TileData.find(function (tile) { return tile.id == tileData.id; });
-                    var tile = new tile_1.Tile(new helpers_1.Vector(x, y), new helpers_1.Vector(x + this_1.worldPosition.x, y + this_1.worldPosition.y), tileWeight);
+                    var tile = new tile_1.Tile(new helpers_1.Vector2(x, y), new helpers_1.Vector2(x + this_1.worldPosition.x, y + this_1.worldPosition.y), tileWeight);
                     tile.movementCost = tileType.movementCost;
                     tile.title = tileType.title;
                     if (!tile.color)
@@ -586,18 +611,18 @@ define('world/world',["require", "exports", "aurelia-framework", "./chunk", "../
     var World = (function () {
         function World() {
             this.perlin = aurelia_framework_1.Container.instance.get(helpers_1.Perlin);
-            this.worldSize = new helpers_1.Vector(2, 1);
-            this.chunkSize = new helpers_1.Vector(50, 38);
+            this.worldSize = new helpers_1.Vector2(2, 1);
+            this.chunkSize = new helpers_1.Vector2(50, 38);
             this.chunks = [];
             this.seed = new helpers_1.Random(Math.floor(Math.random() * 32000)).nextDouble();
             this.playerTile = null;
-            this.generateSeed();
         }
-        World.prototype.generateSeed = function () {
-            this.perlin.seed(this.seed);
+        World.prototype.generateSeed = function (seed) {
+            if (seed === void 0) { seed = null; }
+            this.perlin.seed(seed == null ? this.seed : seed);
         };
         World.prototype.getChunkPositionFromTilePosition = function (position) {
-            var chunk = new helpers_1.Vector();
+            var chunk = new helpers_1.Vector2();
             chunk.x = Math.floor(position.x / this.chunkSize.x);
             chunk.y = Math.floor(position.y / this.chunkSize.y);
             return chunk;
@@ -608,7 +633,7 @@ define('world/world',["require", "exports", "aurelia-framework", "./chunk", "../
                 chunk = this.chunks[position.y][position.x];
             }
             else {
-                chunk = new chunk_1.Chunk(new helpers_1.Vector(this.chunkSize.x, this.chunkSize.y), new helpers_1.Vector(position.x, position.y));
+                chunk = new chunk_1.Chunk(new helpers_1.Vector2(this.chunkSize.x, this.chunkSize.y), new helpers_1.Vector2(position.x, position.y));
                 chunk.seedChunk();
                 if (!this.chunks[position.y])
                     this.chunks[position.y] = [];
@@ -627,7 +652,7 @@ define('world/world',["require", "exports", "aurelia-framework", "./chunk", "../
                         chunks[y][x] = this.chunks[y][x];
                     }
                     else {
-                        chunks[y][x] = new chunk_1.Chunk(new helpers_1.Vector(this.chunkSize.x, this.chunkSize.y), new helpers_1.Vector(x, y));
+                        chunks[y][x] = new chunk_1.Chunk(new helpers_1.Vector2(this.chunkSize.x, this.chunkSize.y), new helpers_1.Vector2(x, y));
                         chunks[y][x].seedChunk();
                         if (!this.chunks[y])
                             this.chunks[y] = [];
@@ -650,7 +675,7 @@ define('world/world',["require", "exports", "aurelia-framework", "./chunk", "../
                 }
             }
             if (targetChunk === null) {
-                targetChunk = this.getChunk(new helpers_1.Vector(targetChunkX, targetChunkY));
+                targetChunk = this.getChunk(new helpers_1.Vector2(targetChunkX, targetChunkY));
             }
             targetTile = targetChunk.tiles[targetTileY][targetTileX];
             return targetTile;
@@ -723,15 +748,19 @@ define('camera',["require", "exports", "aurelia-framework", "./helpers", "./worl
     "use strict";
     var Camera = (function () {
         function Camera(world, eventAggregator) {
+            var _this = this;
             this._eventAggregator = eventAggregator;
             this.position = null;
-            this.viewportScale = new helpers_1.Vector(75, 75);
-            this.scale = new helpers_1.Vector(2, 2);
+            this.viewportScale = new helpers_1.Vector2(75, 75);
+            this.scale = new helpers_1.Vector2(2, 2);
             this.world = world;
             this.viewport = null;
+            this._eventAggregator.subscribe('PlayerMoved', function (event) {
+                _this.translate(event.position);
+            });
         }
-        Camera.prototype.move = function (position) {
-            var startChunk = new helpers_1.Vector(position.x - Math.floor(this.viewportScale.x / 2), position.y - Math.floor(this.viewportScale.y / 2));
+        Camera.prototype.translate = function (position) {
+            var startChunk = new helpers_1.Vector2(position.x - Math.floor(this.viewportScale.x / 2), position.y - Math.floor(this.viewportScale.y / 2));
             this.updateViewport(startChunk, position);
             this.position = position;
         };
@@ -740,7 +769,7 @@ define('camera',["require", "exports", "aurelia-framework", "./helpers", "./worl
             playerTile.isPlayer = true;
         };
         Camera.prototype.updateViewport = function (startPos, playerPos) {
-            this.viewport = new chunk_1.Chunk(new helpers_1.Vector(this.viewportScale.x, this.viewportScale.y), null, startPos);
+            this.viewport = new chunk_1.Chunk(new helpers_1.Vector2(this.viewportScale.x, this.viewportScale.y), null, startPos);
             this.viewport.seedChunk();
             var playerTile = this.viewport.tiles[Math.floor(this.viewportScale.y / 2)][Math.floor(this.viewportScale.x / 2)];
             playerTile.isPlayer = true;
@@ -766,7 +795,7 @@ var __extends = (this && this.__extends) || (function () {
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
-define('actor/player',["require", "exports", "aurelia-framework", "../helpers", "./actor", "../camera"], function (require, exports, aurelia_framework_1, helpers_1, actor_1, camera_1) {
+define('actor/player',["require", "exports", "aurelia-framework", "../helpers", "./actor", "aurelia-event-aggregator", "../events/player-moved-event"], function (require, exports, aurelia_framework_1, helpers_1, actor_1, aurelia_event_aggregator_1, player_moved_event_1) {
     "use strict";
     var Player = (function (_super) {
         __extends(Player, _super);
@@ -774,7 +803,7 @@ define('actor/player',["require", "exports", "aurelia-framework", "../helpers", 
             var _this = _super.call(this) || this;
             _this.collisionEnabled = true;
             _this.enemy = null;
-            _this.camera = aurelia_framework_1.Container.instance.get(camera_1.Camera);
+            _this.eventAggregator = aurelia_framework_1.Container.instance.get(aurelia_event_aggregator_1.EventAggregator);
             return _this;
         }
         Player.prototype.pickUp = function (item) {
@@ -788,11 +817,11 @@ define('actor/player',["require", "exports", "aurelia-framework", "../helpers", 
             this.collisionEnabled = !this.collisionEnabled;
         };
         Player.prototype.setPlayerPosition = function (value) {
-            this.camera.move(value);
+            this.eventAggregator.publish('PlayerMoved', new player_moved_event_1.PlayerMovedEvent(value));
             this.position = value;
         };
         Player.prototype.move = function (direction, distance) {
-            var destination = new helpers_1.Vector();
+            var destination = new helpers_1.Vector2();
             var currentX = this.position.x;
             var currentY = this.position.y;
             switch (direction) {
@@ -1077,8 +1106,6 @@ define('input/input',["require", "exports", "aurelia-framework", "../actor/playe
                     this.movePlayer('ne');
                     break;
             }
-            console.log(event);
-            console.log(this.player.position);
         };
         return Input;
     }());
@@ -1098,7 +1125,7 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
-define('game',["require", "exports", "aurelia-framework", "./actor/player", "./item/item-context", "./world/world", "./helpers", "./input/input", "./camera"], function (require, exports, aurelia_framework_1, player_1, item_context_1, world_1, helpers_1, input_1, camera_1) {
+define('game',["require", "exports", "aurelia-framework", "./actor/player", "./item/item-context", "./world/world", "./helpers", "./input/input", "./camera", "./helpers"], function (require, exports, aurelia_framework_1, player_1, item_context_1, world_1, helpers_1, input_1, camera_1, helpers_2) {
     "use strict";
     var Game = (function () {
         function Game(player, world, itemContext, input, camera) {
@@ -1106,6 +1133,7 @@ define('game',["require", "exports", "aurelia-framework", "./actor/player", "./i
             this.itemContext = null;
             this.world = null;
             this.input = null;
+            this.seed = "Test seed";
             this.itemContext = itemContext;
             this.player = player;
             this.world = world;
@@ -1114,7 +1142,8 @@ define('game',["require", "exports", "aurelia-framework", "./actor/player", "./i
             this.camera = camera;
         }
         Game.prototype.init = function () {
-            var position = new helpers_1.Vector((this.world.chunkSize.x * this.maxWorldSize) / 2, (this.world.chunkSize.y * this.maxWorldSize) / 2);
+            this.world.generateSeed(helpers_2.GenerateHashCode(this.seed));
+            var position = new helpers_1.Vector2((this.world.chunkSize.x * this.maxWorldSize) / 2, (this.world.chunkSize.y * this.maxWorldSize) / 2);
             this.player.setPlayerPosition(position);
         };
         return Game;
@@ -1146,6 +1175,9 @@ define('app',["require", "exports", "aurelia-framework", "./game", "aurelia-even
         App.prototype.attached = function () {
             this.ctx = this.canvas.getContext("2d");
             this.draw();
+            this.init();
+        };
+        App.prototype.init = function () {
             this.game.init();
         };
         App.prototype.AddItem = function (item) {
@@ -1368,5 +1400,16 @@ define('tile/modules/tree',["require", "exports"], function (require, exports) {
     exports.Tree = Tree;
 });
 
-define('text!app.html', ['module'], function(module) { module.exports = "<template>\r\n    <div id=\"map\" style=\"background-color:black;font-family: 'Courier New', Courier, monospace; float:left;\">\r\n        <!--<div repeat.for=\"tileY of game.camera.viewport.tiles\">\r\n            <label repeat.for=\"tileX of tileY\" style=\"background-color:black; width:10px; text-align:center;color:${tileX.isPlayer ? 'blue' : tileX.color}; font-weight:bold;\"\r\n                title=\"${tileX.worldPosition.x} ${tileX.worldPosition.y}\">${tileX.isPlayer ? '@' : tileX.symbol}</label>\r\n        </div>-->\r\n\r\n        <canvas ref=\"canvas\" width=\"${game.maxWorldSize * 4}\" height=\"${game.maxWorldSize * 4}\"> Your browser does not support canvas.</canvas>\r\n\r\n    </div>\r\n    <div id=\"ui\">\r\n        <div style=\"display: inline-block;\">\r\n            <h2>Items</h2>\r\n            <ul>\r\n                <li repeat.for=\"item of game.itemContext.items\" click.delegate=\"AddItem(item)\">\r\n                    ${item.title}\r\n                </li>\r\n            </ul>\r\n            <h2>Inventory</h2>\r\n            <div>\r\n                <div>\r\n                    <div>Weight: ${game.player.inventory.currentWeight}/${game.player.inventory.weightCap}</div>\r\n                    <div>Volume: ${game.player.inventory.currentVolume}/${game.player.inventory.volumeCap}</div>\r\n                </div>\r\n                <div style=\"display: inline-block\">\r\n                    <ul>\r\n                        <li repeat.for=\"item of game.player.inventory.items\">\r\n                            <div click.delegate=\"RemoveItem(item)\">${item.title}</div>\r\n                            <div click.delegate=\"UseItem(item)\">Use</div>\r\n                        </li>\r\n                    </ul>\r\n                </div>\r\n            </div>\r\n        </div>\r\n        <div style=\"display: inline-block\">\r\n            <ul>\r\n                <li repeat.for=\"part of game.player.health.parts\" click.delegate=\"RemoveItem(item)\">\r\n                    ${item.title}\r\n                    <div>${part.description}:${part.value}</div>\r\n                </li>\r\n            </ul>\r\n        </div>\r\n        <button click.delegate=\"toggleCollision()\">Collision</button>\r\n    </div>\r\n</template>"; });
+define('events/player-moved-event',["require", "exports"], function (require, exports) {
+    "use strict";
+    var PlayerMovedEvent = (function () {
+        function PlayerMovedEvent(position) {
+            this.position = position;
+        }
+        return PlayerMovedEvent;
+    }());
+    exports.PlayerMovedEvent = PlayerMovedEvent;
+});
+
+define('text!app.html', ['module'], function(module) { module.exports = "<template>\r\n    <div id=\"map\" style=\"background-color:black;font-family: 'Courier New', Courier, monospace; float:left;\">\r\n        <!--<div repeat.for=\"tileY of game.camera.viewport.tiles\">\r\n            <label repeat.for=\"tileX of tileY\" style=\"background-color:black; width:10px; text-align:center;color:${tileX.isPlayer ? 'blue' : tileX.color}; font-weight:bold;\"\r\n                title=\"${tileX.worldPosition.x} ${tileX.worldPosition.y}\">${tileX.isPlayer ? '@' : tileX.symbol}</label>\r\n        </div>-->\r\n\r\n        <canvas ref=\"canvas\" width=\"${game.maxWorldSize * 4}\" height=\"${game.maxWorldSize * 4}\"> Your browser does not support canvas.</canvas>\r\n\r\n    </div>\r\n    <div id=\"ui\">\r\n        <div style=\"display: inline-block;\">\r\n            <h2>Items</h2>\r\n            <ul>\r\n                <li repeat.for=\"item of game.itemContext.items\" click.delegate=\"AddItem(item)\">\r\n                    ${item.title}\r\n                </li>\r\n            </ul>\r\n            <h2>Inventory</h2>\r\n            <div>\r\n                <div>\r\n                    <div>Weight: ${game.player.inventory.currentWeight}/${game.player.inventory.weightCap}</div>\r\n                    <div>Volume: ${game.player.inventory.currentVolume}/${game.player.inventory.volumeCap}</div>\r\n                </div>\r\n                <div style=\"display: inline-block\">\r\n                    <ul>\r\n                        <li repeat.for=\"item of game.player.inventory.items\">\r\n                            <div click.delegate=\"RemoveItem(item)\">${item.title}</div>\r\n                            <div click.delegate=\"UseItem(item)\">Use</div>\r\n                        </li>\r\n                    </ul>\r\n                </div>\r\n            </div>\r\n        </div>\r\n        <div style=\"display: inline-block\">\r\n            <ul>\r\n                <li repeat.for=\"part of game.player.health.parts\" click.delegate=\"RemoveItem(item)\">\r\n                    ${item.title}\r\n                    <div>${part.description}:${part.value}</div>\r\n                </li>\r\n            </ul>\r\n        </div>\r\n        <div>\r\n        <button click.delegate=\"toggleCollision()\" innerhtml.bind=\"game.player.collisionEnabled ? 'Collision On' : 'Collision Off'\" >Collision</button>\r\n        <div>\r\n            <label>seed</label>\r\n            <input type=\"text\" value.bind=\"game.seed\" />\r\n            <button click.delegate=\"init()\">Generate</button>\r\n        </div>\r\n        </div>\r\n    </div>\r\n</template>"; });
 //# sourceMappingURL=app-bundle.js.map

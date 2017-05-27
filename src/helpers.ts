@@ -1,6 +1,21 @@
 interface Enum {
     [id: number]: string
 }
+
+export function GenerateHashCode (phrase: string): number {
+  let hash: number = 0;
+  let i: number;
+  let chr: number; 
+
+  if (phrase.length === 0) return hash;
+  for (i = 0; i < phrase.length; i++) {
+    chr = phrase.charCodeAt(i);
+    hash = ((hash << 5) - hash) + chr;
+    hash |= 0; // Convert to 32bit integer
+  }
+  return hash;
+};
+
 export function GetEnumElements(e: Enum): Array<string> {
     return Object.keys(e).map(a => e[a]).filter(a => typeof a === 'string');
 }
@@ -14,7 +29,7 @@ export class Guid {
     }
 }
 
-export class Vector {
+export class Vector2 {
     public x: number;
     public y: number;
 

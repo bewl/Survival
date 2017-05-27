@@ -27,6 +27,10 @@ export class App {
 
     this.ctx = this.canvas.getContext("2d");
     this.draw();
+    this.init();
+  }
+
+  init() {
     this.game.init();
   }
 
