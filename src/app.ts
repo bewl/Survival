@@ -11,15 +11,17 @@ export class App {
   public item: Item;
   public game: Game;
   public itemCategories: Array<string>;
+  public
   public itemLifespan: number = 0 //infinite;
   canvas: HTMLCanvasElement;
   ctx: CanvasRenderingContext2D;
-  
+
   _eventAggregator: EventAggregator;
   constructor(game: Game, eventAggregator: EventAggregator) {
     //this.itemCategories = helpers.GetEnumElements(ItemEnums.ItemCategories);
     this._eventAggregator = eventAggregator;
     this.game = game;
+
     //this.item.lifespan = 30;
   }
 
@@ -54,16 +56,26 @@ export class App {
   draw() {
     this._eventAggregator.subscribe('RenderEvent', (event: RenderEvent) => {
       this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-      let cellSize = 10;
+      let cellSizeX = Math.ceil(this.canvas.width / this.game.world.chunkSize.x);
+      let cellSizeY = Math.ceil(this.canvas.height / this.game.world.chunkSize.y);
       this.ctx.lineWidth = 20;
-      this.ctx.font = '14px verdana';
+      this.ctx.font = '11px Courier New';
+      this.ctx.textAlign = "center";
 
       for (let y: number = 0; y < event.symbols.length; y++) {
         let row = event.symbols[y];
         for (let x: number = 0; x < row.length; x++) {
           this.ctx.fillStyle = event.symbols[y][x].isPlayer ? "blue" : event.symbols[y][x].color;
           let symbol = event.symbols[y][x].isPlayer ? "@" : event.symbols[y][x].symbol;
-          this.ctx.fillText(symbol, (x * cellSize) + (cellSize / 2), (y * cellSize) + (cellSize / 2));
+          if (event.symbols[y][x].isPlayer) {
+            this.ctx.shadowColor = "white";
+            this.ctx.shadowBlur = 12;
+            this.ctx.lineWidth = 2;
+            this.ctx.strokeText(symbol, x * cellSizeX, y * cellSizeY)
+          } else {
+            this.ctx.shadowBlur = 0;
+          }
+          this.ctx.fillText(symbol, x * cellSizeX, y * cellSizeY);
         }
       }
     });

@@ -13,7 +13,8 @@ export class Camera {
 
     position: Vector2;
     scale: Vector2;
-    viewportScale: Vector2;
+    viewportSize: Vector2;
+    viewportScale: number;
     bounds: Array<Vector2>;
     world: World;
     chunks: Chunk[][];
@@ -23,9 +24,9 @@ export class Camera {
     constructor(world, eventAggregator) {
         this._eventAggregator = eventAggregator;
         this.position = null;
-        this.viewportScale = new Vector2(75,75)
-        this.scale = new Vector2(2, 2);
         this.world = world;
+        this.viewportSize = this.world.chunkSize //1960x950 = 2.02 aspect ratio
+        this.scale = new Vector2(2, 2);
         this.viewport = null;
 
         this._eventAggregator.subscribe('PlayerMoved', (event: PlayerMovedEvent) => {
@@ -36,7 +37,7 @@ export class Camera {
 
     translate(position: Vector2) {
         //get chunk bounds coordinates
-        let startChunk = new Vector2(position.x - Math.floor(this.viewportScale.x / 2), position.y - Math.floor(this.viewportScale.y / 2)); //new Vector(chunk.x - this.scale.x, chunk.y - this.scale.y);
+        let startChunk = new Vector2(position.x - Math.floor(this.viewportSize.x / 2), position.y - Math.floor(this.viewportSize.y / 2)); //new Vector(chunk.x - this.scale.x, chunk.y - this.scale.y);
 
         this.updateViewport(startChunk, position);
 
@@ -70,13 +71,13 @@ export class Camera {
 
         //quadrand
         //needs heavy optimization here
-        this.viewport = new Chunk(new Vector2(this.viewportScale.x, this.viewportScale.y), null, startPos)
+        this.viewport = new Chunk(new Vector2(this.viewportSize.x, this.viewportSize.y), null, startPos)
         this.viewport.seedChunk();
 
-        let playerTile = this.viewport.tiles[Math.floor(this.viewportScale.y / 2)][Math.floor(this.viewportScale.x / 2)];
+        let playerTile = this.viewport.tiles[Math.floor(this.viewportSize.y / 2)][Math.floor(this.viewportSize.x / 2)];
         playerTile.isPlayer = true;
         let flattendTiles = [].concat(...this.viewport.tiles);
-         this._eventAggregator.publish('RenderEvent', new RenderEvent(this.viewport.tiles, this.viewportScale.x));
+         this._eventAggregator.publish('RenderEvent', new RenderEvent(this.viewport.tiles, this.viewportScale));
          
     }
 }

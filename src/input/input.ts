@@ -1,10 +1,10 @@
-import {inject} from 'aurelia-framework';
-import {Player} from '../actor/player';
+import { inject } from 'aurelia-framework';
+import { Player } from '../actor/player';
 
 
 @inject(Player)
 export class Input {
-    private player:Player;
+    private player: Player;
     private boundHandler;
 
     constructor(player) {
@@ -21,13 +21,20 @@ export class Input {
         window.removeEventListener('keypress', this.boundHandler);
     }
 
-    movePlayer(direction:string) {
+    movePlayer(direction: string) {
         this.player.move(direction, 1);
     }
 
     handleKeyInput(event) {
-        
-        switch(event.code.toUpperCase()) {
+
+        switch (event.code.toUpperCase()) {
+            case "65":
+                break;
+            case "66":
+                break;
+            case "KEYC":
+                this.player.collisionEnabled = !this.player.collisionEnabled;
+                break;
             case "NUMPAD1":
                 this.movePlayer('sw');
                 break;

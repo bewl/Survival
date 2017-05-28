@@ -12,7 +12,7 @@ import { PlayerMovedEvent } from '../events/player-moved-event';
 export class Player extends Actor {
     public enemy: Monster;
     public world: World;
-    public collisionEnabled: boolean = true;
+    public collisionEnabled: boolean = false;
     public eventAggregator: EventAggregator;
 
     constructor() {

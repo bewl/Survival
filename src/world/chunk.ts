@@ -26,9 +26,9 @@ constructor(chunkSize: Vector2, position: Vector2 = new Vector2(), worldPosition
 
         }
         //WRITE SOME DAMN COMMENTS YOU IDIOT WTF IS THIS 
-        let weightMod = 100; //modifier to perlin noise result
+        let weightMod = 20; //modifier to perlin noise result
         let weightRange = weightMod * 3.0; //used to modify normalized weight ranges for tiles to correspond to the modified perline noise result
-        let perlinDivisor = 20; 
+        let perlinDivisor = 40; 
 
         let weightMap = [];
 
@@ -60,7 +60,10 @@ constructor(chunkSize: Vector2, position: Vector2 = new Vector2(), worldPosition
         for (let y = 0; y < this.chunkSize.y; y++) {
             this.tiles[y] = [];
             for (let x = 0; x < this.chunkSize.x; x++) {
-                let tileWeight = Math.ceil(this.perlin.simplex2((x + this.worldPosition.x) / perlinDivisor, (y + this.worldPosition.y) / perlinDivisor) * weightMod);
+                let worldPositionX = x + this.worldPosition.x;
+                let worldPositionY = y + this.worldPosition.y;
+                //let tileWeight = Math.ceil(this.perlin.perlin2(worldPositionX / perlinDivisor, worldPositionY / perlinDivisor) * weightMod)
+                let tileWeight = Math.ceil(this.perlin.simplex2(worldPositionX / perlinDivisor, worldPositionY / perlinDivisor) * weightMod);
                 let tileType = null;
 
                 let maxLayer = 1000;
@@ -74,7 +77,7 @@ constructor(chunkSize: Vector2, position: Vector2 = new Vector2(), worldPosition
                         //is this tile randomized to show?
                         if (tile.random === true) {
                             let show = true;
-                            let rnd = new Random((this.perlin.seedValue * 100) + tileWeight * 10000000);
+                            let rnd = new Random((this.perlin.seedValue * parseInt('' + worldPositionX + worldPositionY)) + tileWeight * 10000000);
                             let num = rnd.nextInt(1, 100);
                             show = num <= tile.randomPercent * 100;
                             //If we are not going to randomly show the tile then

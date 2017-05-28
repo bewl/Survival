@@ -1,5 +1,7 @@
 export enum Keybinds {
     A,
+    B,
+    C,
     NUM1,
     NUM2,
     NUM3,

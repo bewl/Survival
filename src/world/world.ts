@@ -9,15 +9,18 @@ export class World {
     public worldSize: Vector2;
     public chunkSize: Vector2;
     public seed: number;
+    public viewPortAspectRatio: number;
+    public viewportScale: number;
     private perlin: Perlin;
     playerTile: Tile;
 
 
     constructor() {
-
+        this.viewportScale = 7;
+        this.viewPortAspectRatio = 2.02;
         this.perlin = Container.instance.get(Perlin) as Perlin;
         this.worldSize = new Vector2(2, 1);
-        this.chunkSize = new Vector2(50, 38); //TODO: put this in a setting so other modules can access it
+        this.chunkSize = new Vector2(this.viewportScale * (Math.floor(9 * this.viewPortAspectRatio)), Math.floor(this.viewportScale * 9)); //TODO: put this in a setting so other modules can access it
         this.chunks = [];
         this.seed = new Random(Math.floor(Math.random() * 32000)).nextDouble();
         this.playerTile = null;
