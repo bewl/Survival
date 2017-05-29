@@ -42,6 +42,11 @@ export class Vector2 {
         return this.x * x + this.y * y;
     };
 
+    isInsideBounds(topLeft: Vector2, bottomRight: Vector2) {
+        return (this.x  >= topLeft.x && this.x <= bottomRight.x
+                && this.y >= topLeft.y && this.y <= bottomRight.y);
+    }
+
 }
 
 export class Vector3 {
@@ -145,7 +150,7 @@ export class Perlin {
     // This isn't a very good seeding function, but it works ok. It supports 2^16
     // different seed values. Write something better if you need more seeds.
     seed(seed) {
-        this.seedValue = seed;
+        this.seedValue = Math.abs(seed);
         if (seed > 0 && seed < 1) {
             // Scale the seed out
             seed *= 65536;

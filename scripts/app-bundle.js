@@ -40,6 +40,10 @@ define('helpers',["require", "exports"], function (require, exports) {
             return this.x * x + this.y * y;
         };
         ;
+        Vector2.prototype.isInsideBounds = function (topLeft, bottomRight) {
+            return (this.x >= topLeft.x && this.x <= bottomRight.x
+                && this.y >= topLeft.y && this.y <= bottomRight.y);
+        };
         return Vector2;
     }());
     exports.Vector2 = Vector2;
@@ -113,7 +117,7 @@ define('helpers',["require", "exports"], function (require, exports) {
         };
         ;
         Perlin.prototype.seed = function (seed) {
-            this.seedValue = seed;
+            this.seedValue = Math.abs(seed);
             if (seed > 0 && seed < 1) {
                 seed *= 65536;
             }
@@ -476,50 +480,55 @@ define('tile/tile',["require", "exports", "../inventory/inventory"], function (r
 define('tile/data/tiles',["require", "exports"], function (require, exports) {
     "use strict";
     var WATER_MAX = 0.1;
-    var tiles = [
-        {
-            id: "grass",
-            color: "#66CD00",
-            symbol: 183,
-            movementCost: 50,
-            weight: { min: 0.07, max: null },
-            random: false,
-            randomPercent: 0,
-            layer: 0,
-        },
-        {
-            id: "tree",
-            weight: { min: WATER_MAX + .003, max: 0.47 },
-            random: true,
-            randomPercent: 0.44,
-            symbol: 165,
-            color: '#228B22',
-            movementCost: -1,
-            layer: 1
-        },
-        {
-            id: "stone",
-            weight: { min: 0.40, max: 0.64 },
-            random: true,
-            randomPercent: 0.01,
-            symbol: 186,
-            color: '#b8c0c8',
-            movementCost: -1,
-            layer: 1.1
-        },
-        {
-            id: "water",
-            weight: { min: null, max: WATER_MAX },
-            random: false,
-            randomPercent: 0,
-            symbol: 126,
-            color: '#1E90FF',
-            movementCost: -1,
-            layer: 1000
-        }
-    ];
+    var tileData = {
+        weightMod: 20,
+        weightRange: 20 * 3,
+        tiles: [
+            {
+                id: "grass",
+                color: "#66CD00",
+                symbol: 183,
+                movementCost: 50,
+                weight: { min: WATER_MAX, max: null },
+                distanceBuffer: 1000,
+                random: false,
+                randomPercent: 0,
+                layer: 0,
+            },
+            {
+                id: "tree",
+                weight: { min: WATER_MAX + .003, max: 0.47 },
+                random: true,
+                randomPercent: 0.44,
+                symbol: 165,
+                color: '#228B22',
+                movementCost: -1,
+                layer: 1
+            },
+            {
+                id: "stone",
+                weight: { min: 0.40, max: 0.64 },
+                random: true,
+                randomPercent: 0.01,
+                symbol: 186,
+                color: '#b8c0c8',
+                movementCost: -1,
+                layer: 1.1
+            },
+            {
+                id: "water",
+                weight: { min: null, max: WATER_MAX },
+                random: false,
+                randomPercent: 0,
+                symbol: 126,
+                color: '#1E90FF',
+                movementCost: -1,
+                layer: 1000
+            }
+        ]
+    };
     Object.defineProperty(exports, "__esModule", { value: true });
-    exports.default = tiles;
+    exports.default = tileData;
 });
 
 define('world/chunk',["require", "exports", "aurelia-framework", "../tile/tile", "../helpers", "../tile/data/tiles"], function (require, exports, aurelia_framework_1, tile_1, helpers_1, tiles_1) {
@@ -534,18 +543,25 @@ define('world/chunk',["require", "exports", "aurelia-framework", "../tile/tile",
             this.tiles = [];
             this.position = position;
             this.worldPosition = worldPosition ? worldPosition : new helpers_1.Vector2((this.position.x * this.chunkSize.x), (position.y * this.chunkSize.y));
+            this.seedChunk();
         }
         Chunk.prototype.seedChunk = function () {
-            var _this = this;
-            if (this.position != null) {
+            var weightMap = this.generateWeightMap();
+            var distanceBuffers = [];
+            for (var y = 0; y < this.chunkSize.y; y++) {
+                this.tiles[y] = [];
+                for (var x = 0; x < this.chunkSize.x; x++) {
+                    var worldPosition = new helpers_1.Vector2(x + this.worldPosition.x, y + this.worldPosition.y);
+                    var tile = this.generateTile(worldPosition, this.position, weightMap);
+                    this.tiles[y][x] = tile;
+                }
             }
-            var weightMod = 20;
-            var weightRange = weightMod * 3.0;
-            var perlinDivisor = 40;
+        };
+        Chunk.prototype.generateWeightMap = function () {
             var weightMap = [];
-            TileData.forEach(function (tile) {
-                var min = tile.weight.min == null ? null : (tile.weight.min * weightRange) - weightMod;
-                var max = tile.weight.max == null ? null : (tile.weight.max * weightRange) - weightMod;
+            TileData.tiles.forEach(function (tile) {
+                var min = tile.weight.min == null ? null : (tile.weight.min * tiles_1.default.weightRange) - tiles_1.default.weightMod;
+                var max = tile.weight.max == null ? null : (tile.weight.max * tiles_1.default.weightRange) - tiles_1.default.weightMod;
                 weightMap.push({
                     id: tile.id,
                     random: tile.random,
@@ -557,7 +573,7 @@ define('world/chunk',["require", "exports", "aurelia-framework", "../tile/tile",
                     }
                 });
             });
-            weightMap = weightMap.sort(function (a, b) {
+            return weightMap.sort(function (a, b) {
                 if (a.layer > b.layer) {
                     return -1;
                 }
@@ -566,45 +582,38 @@ define('world/chunk',["require", "exports", "aurelia-framework", "../tile/tile",
                 }
                 return 0;
             });
-            for (var y = 0; y < this.chunkSize.y; y++) {
-                this.tiles[y] = [];
-                var _loop_1 = function (x) {
-                    var worldPositionX = x + this_1.worldPosition.x;
-                    var worldPositionY = y + this_1.worldPosition.y;
-                    var tileWeight = Math.ceil(this_1.perlin.simplex2(worldPositionX / perlinDivisor, worldPositionY / perlinDivisor) * weightMod);
-                    var tileType = null;
-                    var maxLayer = 1000;
-                    var currentLayer = maxLayer;
-                    var tileData;
-                    tileData = weightMap.find(function (tile) {
-                        if (((tile.weight.max >= tileWeight) || tile.weight.max == null)
-                            && ((tile.weight.min <= tileWeight) || tile.weight.min == null)) {
-                            if (tile.random === true) {
-                                var show = true;
-                                var rnd = new helpers_1.Random((_this.perlin.seedValue * parseInt('' + worldPositionX + worldPositionY)) + tileWeight * 10000000);
-                                var num = rnd.nextInt(1, 100);
-                                show = num <= tile.randomPercent * 100;
-                                return show;
-                            }
-                            return true;
-                        }
-                        return false;
-                    });
-                    tileType = TileData.find(function (tile) { return tile.id == tileData.id; });
-                    var tile = new tile_1.Tile(new helpers_1.Vector2(x, y), new helpers_1.Vector2(x + this_1.worldPosition.x, y + this_1.worldPosition.y), tileWeight);
-                    tile.movementCost = tileType.movementCost;
-                    tile.title = tileType.title;
-                    if (!tile.color)
-                        tile.color = tileType.color;
-                    if (!tile.symbol)
-                        tile.symbol = String.fromCharCode(tileType.symbol);
-                    this_1.tiles[y][x] = tile;
-                };
-                var this_1 = this;
-                for (var x = 0; x < this.chunkSize.x; x++) {
-                    _loop_1(x);
+        };
+        Chunk.prototype.generateTile = function (worldPosition, chunkPosition, weightMap) {
+            var _this = this;
+            var perlinDivisor = 40;
+            var tileWeight = Math.ceil(this.perlin.simplex2(worldPosition.x / perlinDivisor, worldPosition.y / perlinDivisor) * TileData.weightMod);
+            var tileType = null;
+            var maxLayer = 1000;
+            var currentLayer = maxLayer;
+            var tileData;
+            tileData = weightMap.find(function (tile) {
+                if (((tile.weight.max >= tileWeight) || tile.weight.max == null)
+                    && ((tile.weight.min <= tileWeight) || tile.weight.min == null)) {
+                    if (tile.randomPercent != null && tile.randomPercent != 0) {
+                        var show = true;
+                        var rnd = new helpers_1.Random((_this.perlin.seedValue * parseInt('' + worldPosition.x + worldPosition.y)) + tileWeight * 10000000);
+                        var num = rnd.nextInt(1, 100);
+                        show = num <= tile.randomPercent * 100;
+                        return show;
+                    }
+                    return true;
                 }
-            }
+                return false;
+            });
+            tileType = TileData.tiles.find(function (tile) { return tile.id == tileData.id; });
+            var tile = new tile_1.Tile(chunkPosition, new helpers_1.Vector2(worldPosition.x, worldPosition.y), tileWeight);
+            tile.movementCost = tileType.movementCost;
+            tile.title = tileType.title;
+            if (!tile.color)
+                tile.color = tileType.color;
+            if (!tile.symbol)
+                tile.symbol = String.fromCharCode(tileType.symbol);
+            return tile;
         };
         Chunk.prototype.getTileByWorldPosition = function (position, chunkSize) {
             var size = chunkSize || this.chunkSize;
@@ -635,7 +644,27 @@ define('world/world',["require", "exports", "aurelia-framework", "./chunk", "../
             if (seed === void 0) { seed = null; }
             this.perlin.seed(seed == null ? this.seed : seed);
         };
-        World.prototype.getChunkPositionFromTilePosition = function (position) {
+        World.prototype.getActiveChunks = function () {
+        };
+        World.prototype.generateActiveChunks = function (startPos) {
+            var minY = startPos.y - this.activeChunkSize;
+            var maxY = startPos.y + this.activeChunkSize;
+            var minX = startPos.x - this.activeChunkSize;
+            var maxX = startPos.x + this.activeChunkSize;
+            var activeChunks = [];
+            for (var y = 0; y <= maxY - startPos.y; y++) {
+                activeChunks[y] = [];
+                for (var x = 0; x <= maxX - startPos.x; x++) {
+                    var position = new helpers_1.Vector2(minX + x, minY + y);
+                    var chunk = this.chunks[position.y][position.x];
+                    if (chunk == null)
+                        this.chunks[position.y][position.x] = new chunk_1.Chunk(this.chunkSize, position);
+                    activeChunks[y][x] = this.chunks[minY + y][minX + x];
+                }
+            }
+            this.activeChunks = activeChunks;
+        };
+        World.prototype.getChunkPositionFromWorldPosition = function (position) {
             var chunk = new helpers_1.Vector2();
             chunk.x = Math.floor(position.x / this.chunkSize.x);
             chunk.y = Math.floor(position.y / this.chunkSize.y);
@@ -648,7 +677,6 @@ define('world/world',["require", "exports", "aurelia-framework", "./chunk", "../
             }
             else {
                 chunk = new chunk_1.Chunk(new helpers_1.Vector2(this.chunkSize.x, this.chunkSize.y), new helpers_1.Vector2(position.x, position.y));
-                chunk.seedChunk();
                 if (!this.chunks[position.y])
                     this.chunks[position.y] = [];
                 this.chunks[position.y][position.x] = chunk;
@@ -667,7 +695,6 @@ define('world/world',["require", "exports", "aurelia-framework", "./chunk", "../
                     }
                     else {
                         chunks[y][x] = new chunk_1.Chunk(new helpers_1.Vector2(this.chunkSize.x, this.chunkSize.y), new helpers_1.Vector2(x, y));
-                        chunks[y][x].seedChunk();
                         if (!this.chunks[y])
                             this.chunks[y] = [];
                         this.chunks[y][x] = chunks[y][x];
@@ -1196,17 +1223,75 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
-define('app',["require", "exports", "aurelia-framework", "./game", "aurelia-event-aggregator"], function (require, exports, aurelia_framework_1, game_1, aurelia_event_aggregator_1) {
+define('renderer',["require", "exports", "aurelia-event-aggregator", "aurelia-framework", "./game"], function (require, exports, aurelia_event_aggregator_1, aurelia_framework_1, game_1) {
+    "use strict";
+    var Renderer = (function () {
+        function Renderer(ea, game) {
+            var _this = this;
+            this._eventAggregator = ea;
+            this.game = game;
+            this._eventAggregator.subscribe('RenderEvent', function (event) {
+                _this.draw(event);
+            });
+        }
+        Renderer.prototype.init = function (canvas) {
+            this.canvas = canvas;
+            this.ctx = this.canvas.getContext("2d");
+        };
+        ;
+        Renderer.prototype.draw = function (event) {
+            this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+            var cellSizeX = Math.ceil(this.canvas.width / this.game.world.chunkSize.x);
+            var cellSizeY = Math.ceil(this.canvas.height / this.game.world.chunkSize.y);
+            this.ctx.lineWidth = 20;
+            this.ctx.font = '11px Courier New';
+            this.ctx.textAlign = "center";
+            for (var y = 0; y < event.symbols.length; y++) {
+                var row = event.symbols[y];
+                for (var x = 0; x < row.length; x++) {
+                    this.ctx.fillStyle = event.symbols[y][x].isPlayer ? "blue" : event.symbols[y][x].color;
+                    var symbol = event.symbols[y][x].isPlayer ? "@" : event.symbols[y][x].symbol;
+                    if (event.symbols[y][x].isPlayer) {
+                        this.ctx.shadowColor = "white";
+                        this.ctx.shadowBlur = 12;
+                        this.ctx.lineWidth = 2;
+                        this.ctx.strokeText(symbol, x * cellSizeX, y * cellSizeY);
+                    }
+                    else {
+                        this.ctx.shadowBlur = 0;
+                    }
+                    this.ctx.fillText(symbol, x * cellSizeX, y * cellSizeY);
+                }
+            }
+        };
+        return Renderer;
+    }());
+    Renderer = __decorate([
+        aurelia_framework_1.inject(aurelia_event_aggregator_1.EventAggregator, game_1.Game),
+        __metadata("design:paramtypes", [aurelia_event_aggregator_1.EventAggregator, game_1.Game])
+    ], Renderer);
+    exports.Renderer = Renderer;
+});
+
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+define('app',["require", "exports", "aurelia-framework", "./game", "./renderer", "aurelia-event-aggregator"], function (require, exports, aurelia_framework_1, game_1, renderer_1, aurelia_event_aggregator_1) {
     "use strict";
     var App = (function () {
-        function App(game, eventAggregator) {
-            this.itemLifespan = 0;
+        function App(game, eventAggregator, renderer) {
             this._eventAggregator = eventAggregator;
+            this.renderer = renderer;
             this.game = game;
         }
         App.prototype.attached = function () {
-            this.ctx = this.canvas.getContext("2d");
-            this.draw();
+            this.renderer.init(this.canvas);
             this.init();
         };
         App.prototype.init = function () {
@@ -1225,39 +1310,11 @@ define('app',["require", "exports", "aurelia-framework", "./game", "aurelia-even
         App.prototype.toggleCollision = function () {
             this.game.player.toggleCollision();
         };
-        App.prototype.draw = function () {
-            var _this = this;
-            this._eventAggregator.subscribe('RenderEvent', function (event) {
-                _this.ctx.clearRect(0, 0, _this.canvas.width, _this.canvas.height);
-                var cellSizeX = Math.ceil(_this.canvas.width / _this.game.world.chunkSize.x);
-                var cellSizeY = Math.ceil(_this.canvas.height / _this.game.world.chunkSize.y);
-                _this.ctx.lineWidth = 20;
-                _this.ctx.font = '11px Courier New';
-                _this.ctx.textAlign = "center";
-                for (var y = 0; y < event.symbols.length; y++) {
-                    var row = event.symbols[y];
-                    for (var x = 0; x < row.length; x++) {
-                        _this.ctx.fillStyle = event.symbols[y][x].isPlayer ? "blue" : event.symbols[y][x].color;
-                        var symbol = event.symbols[y][x].isPlayer ? "@" : event.symbols[y][x].symbol;
-                        if (event.symbols[y][x].isPlayer) {
-                            _this.ctx.shadowColor = "white";
-                            _this.ctx.shadowBlur = 12;
-                            _this.ctx.lineWidth = 2;
-                            _this.ctx.strokeText(symbol, x * cellSizeX, y * cellSizeY);
-                        }
-                        else {
-                            _this.ctx.shadowBlur = 0;
-                        }
-                        _this.ctx.fillText(symbol, x * cellSizeX, y * cellSizeY);
-                    }
-                }
-            });
-        };
         return App;
     }());
     App = __decorate([
-        aurelia_framework_1.inject(game_1.Game, aurelia_event_aggregator_1.EventAggregator),
-        __metadata("design:paramtypes", [game_1.Game, aurelia_event_aggregator_1.EventAggregator])
+        aurelia_framework_1.inject(game_1.Game, aurelia_event_aggregator_1.EventAggregator, renderer_1.Renderer),
+        __metadata("design:paramtypes", [game_1.Game, aurelia_event_aggregator_1.EventAggregator, renderer_1.Renderer])
     ], App);
     exports.App = App;
 });
@@ -1435,6 +1492,42 @@ define('resources/index',["require", "exports"], function (require, exports) {
     exports.configure = configure;
 });
 
+define('utility/vector',["require", "exports"], function (require, exports) {
+    "use strict";
+    var Vector2 = (function () {
+        function Vector2(x, y) {
+            this.x = x || 0;
+            this.y = y || 0;
+        }
+        Vector2.prototype.dot2 = function (x, y) {
+            return this.x * x + this.y * y;
+        };
+        ;
+        Vector2.prototype.isInsideBounds = function (topLeft, bottomRight) {
+            return (this.x >= topLeft.x && this.x <= bottomRight.x
+                && this.y >= topLeft.y && this.y <= bottomRight.y);
+        };
+        return Vector2;
+    }());
+    exports.Vector2 = Vector2;
+    var Vector3 = (function () {
+        function Vector3(x, y, z) {
+            this.x = x || 0;
+            this.y = y || 0;
+            this.z = z || 0;
+        }
+        Vector3.prototype.dot2 = function (x, y) {
+            return this.x * x + this.y * y;
+        };
+        ;
+        Vector3.prototype.dot3 = function (x, y, z) {
+            return this.x * x + this.y * y + this.z * z;
+        };
+        return Vector3;
+    }());
+    exports.Vector3 = Vector3;
+});
+
 define('tile/modules/tree',["require", "exports"], function (require, exports) {
     "use strict";
     var Tree = (function () {
@@ -1445,5 +1538,5 @@ define('tile/modules/tree',["require", "exports"], function (require, exports) {
     exports.Tree = Tree;
 });
 
-define('text!app.html', ['module'], function(module) { module.exports = "<template>\r\n    <canvas ref=\"canvas\" width=\"${game.maxWorldSize * 4}\" height=\"${game.maxWorldSize * 4}\"> Your browser does not support canvas.</canvas>\r\n    <div id=\"map\" style=\"position: relative; background-color:black;font-family: 'Courier New', Courier, monospace; width: 100%; height: 100%;\">\r\n        <div id=\"ui\">\r\n            <div style=\"display: inline-block;\">\r\n                <h2>Items</h2>\r\n                <ul>\r\n                    <li repeat.for=\"item of game.itemContext.items\" click.delegate=\"AddItem(item)\">\r\n                        ${item.title}\r\n                    </li>\r\n                </ul>\r\n                <h2>Inventory</h2>\r\n                <div>\r\n                    <div>\r\n                        <div>Weight: ${game.player.inventory.currentWeight}/${game.player.inventory.weightCap}</div>\r\n                        <div>Volume: ${game.player.inventory.currentVolume}/${game.player.inventory.volumeCap}</div>\r\n                    </div>\r\n                    <div style=\"display: inline-block\">\r\n                        <ul>\r\n                            <li repeat.for=\"item of game.player.inventory.items\">\r\n                                <div click.delegate=\"RemoveItem(item)\">${item.title}</div>\r\n                                <div click.delegate=\"UseItem(item)\">Use</div>\r\n                            </li>\r\n                        </ul>\r\n                    </div>\r\n                </div>\r\n            </div>\r\n            <div style=\"display: inline-block\">\r\n                <ul>\r\n                    <li repeat.for=\"part of game.player.health.parts\" click.delegate=\"RemoveItem(item)\">\r\n                        ${item.title}\r\n                        <div>${part.description}:${part.value}</div>\r\n                    </li>\r\n                </ul>\r\n            </div>\r\n            <div>\r\n                <button click.delegate=\"toggleCollision()\" innerhtml.bind=\"game.player.collisionEnabled ? 'Collision On' : 'Collision Off'\">Collision</button>\r\n                <div>\r\n                    <label>seed</label>\r\n                    <input type=\"text\" value.bind=\"game.seed\" />\r\n                    <button click.delegate=\"init()\">Generate</button>\r\n                </div>\r\n            </div>\r\n        </div>\r\n    </div>\r\n\r\n</template>"; });
+define('text!app.html', ['module'], function(module) { module.exports = "<template>\r\n    <canvas ref=\"canvas\" width=\"${game.maxWorldSize * 4}\" height=\"${game.maxWorldSize * 4}\"> Your browser does not support canvas.</canvas>\r\n    <div id=\"map\" style=\"position: relative; background-color:black;font-family: 'Courier New', Courier, monospace; width: 100%; height: 100%;\">\r\n        <div id=\"ui\">\r\n            <div style=\"display: inline-block;\">\r\n                <h2>Items</h2>\r\n                <ul>\r\n                    <li repeat.for=\"item of game.itemContext.items\" click.delegate=\"AddItem(item)\">\r\n                        ${item.title}\r\n                    </li>\r\n                </ul>\r\n                <h2>Inventory</h2>\r\n                <div>\r\n                    <div>\r\n                        <div>Weight: ${game.player.inventory.currentWeight}/${game.player.inventory.weightCap}</div>\r\n                        <div>Volume: ${game.player.inventory.currentVolume}/${game.player.inventory.volumeCap}</div>\r\n                    </div>\r\n                    <div style=\"display: inline-block\">\r\n                        <ul>\r\n                            <li repeat.for=\"item of game.player.inventory.items\">\r\n                                <div click.delegate=\"RemoveItem(item)\">${item.title}</div>\r\n                                <div click.delegate=\"UseItem(item)\">Use</div>\r\n                            </li>\r\n                        </ul>\r\n                    </div>\r\n                </div>\r\n            </div>\r\n            <div style=\"display: inline-block\">\r\n                <ul>\r\n                    <li repeat.for=\"part of game.player.health.parts\" click.delegate=\"RemoveItem(item)\">\r\n                        ${item.title}\r\n                        <div>${part.description}:${part.value}</div>\r\n                    </li>\r\n                </ul>\r\n            </div>\r\n            <div>\r\n                <div class=\"dev-stat\">\r\n                    <span>x: ${game.player.position.x}</span>\r\n                    <span>y: ${game.player.position.y}</span>\r\n                </div>\r\n                <button click.delegate=\"toggleCollision()\" innerhtml.bind=\"game.player.collisionEnabled ? 'Collision On' : 'Collision Off'\">Collision</button>\r\n                <div>\r\n                    <label>seed</label>\r\n                    <input type=\"text\" value.bind=\"game.seed\" />\r\n                    <button click.delegate=\"init()\">Generate</button>\r\n                </div>\r\n            </div>\r\n        </div>\r\n    </div>\r\n\r\n</template>"; });
 //# sourceMappingURL=app-bundle.js.map

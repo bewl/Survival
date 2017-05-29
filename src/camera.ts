@@ -37,7 +37,7 @@ export class Camera {
 
     translate(position: Vector2) {
         //get chunk bounds coordinates
-        let startChunk = new Vector2(position.x - Math.floor(this.viewportSize.x / 2), position.y - Math.floor(this.viewportSize.y / 2)); //new Vector(chunk.x - this.scale.x, chunk.y - this.scale.y);
+        let startChunk = new Vector2(position.x - Math.floor(this.viewportSize.x / 2), position.y - Math.floor(this.viewportSize.y / 2));
 
         this.updateViewport(startChunk, position);
 
@@ -50,26 +50,6 @@ export class Camera {
     }
 
     updateViewport(startPos: Vector2, playerPos: Vector2) {
-        // /*********************
-        // v1------------------v2
-        // |                   |
-        // |                   |
-        // |         @         |
-        // |                   |
-        // |                   |
-        // v0__________________v3
-        // /********************* */
-        // let v0 = new Vector(playerPos.x - (this.viewportScale.x / 2), playerPos.y - (this.viewportScale.y / 2) );
-        // let v1 = new Vector(playerPos.x - (this.viewportScale.x / 2), playerPos.y + (this.viewportScale.y / 2) );
-        // let v2 = new Vector(playerPos.x + (this.viewportScale.x / 2), playerPos.y + (this.viewportScale.y / 2) );
-        // let v3 = new Vector(playerPos.x + (this.viewportScale.x / 2), playerPos.y - (this.viewportScale.y / 2) );
-
-        // let c0 = this.world.getChunkPositionFromTilePosition(v0);
-        // let c1 = v0 == v1 ? null : this.world.getChunkPositionFromTilePosition(v1);
-        // let c2 = v0 == v2 || v1 == v2 ? null : this.world.getChunkPositionFromTilePosition(v2);
-        // let c3 = v0 == v3 || v1 == v3 || v2 == v3 ? null : this.world.getChunkPositionFromTilePosition(v3);
-
-        //quadrand
         //needs heavy optimization here
         this.viewport = new Chunk(new Vector2(this.viewportSize.x, this.viewportSize.y), null, startPos)
         this.viewport.seedChunk();

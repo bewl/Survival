@@ -11,6 +11,11 @@ body {
 #ui ul li {
     list-style: none;
 }
+
+#ui .dev-stat {
+    font-size: .60em;
+
+}
 canvas {
             background-color: #000;
             display: block;

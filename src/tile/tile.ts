@@ -18,7 +18,7 @@ export class Tile {
         this.inventory = new Inventory();
         this.isPlayer = false;
         this.tileWeight = tileWeight;
-
+        
         this.generateData()
     }
 
