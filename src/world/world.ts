@@ -2,11 +2,12 @@ import { inject, Container } from 'aurelia-framework';
 import { Chunk } from './chunk';
 import { Tile } from '../tile/tile';
 
-import { Perlin, Random, Vector2 } from '../helpers';
+import { Perlin, Random, Vector2, Bounds } from '../helpers';
 
 export class World {
     public chunks: Chunk[][];
     public activeChunks: Chunk[][]; //the chunks including and surrounding the camera viewport
+    public activeTiles: Tile[][];
     public activeChunkSize: number; //the amount of active chunks in a given direction
     public worldSize: Vector2;
     public chunkSize: Vector2;
@@ -22,7 +23,7 @@ export class World {
         this.viewPortAspectRatio = 2.02;
         this.perlin = Container.instance.get(Perlin) as Perlin;
         this.worldSize = new Vector2(2, 1);
-        this.chunkSize = new Vector2(this.viewportScale * (Math.floor(9 * this.viewPortAspectRatio)), Math.floor(this.viewportScale * 9)); //TODO: put this in a setting so other modules can access it
+        this.chunkSize = new Vector2(100, 100);//new Vector2(this.viewportScale * (Math.floor(9 * this.viewPortAspectRatio)), Math.floor(this.viewportScale * 9)); //TODO: put this in a setting so other modules can access it
         this.chunks = [];
         this.seed = new Random(Math.floor(Math.random() * 32000)).nextDouble();
         this.playerTile = null;
@@ -32,18 +33,13 @@ export class World {
         this.perlin.seed(seed == null ? this.seed : seed);
     }
 
-    getActiveChunks() {
-        //evaluate the min x, max x, min y, max y bounds 
-        //for reloading new active chunks
-    }
-
     generateActiveChunks(startPos: Vector2) {
         let minY = startPos.y - this.activeChunkSize;
         let maxY = startPos.y + this.activeChunkSize;
         let minX = startPos.x - this.activeChunkSize;
         let maxX = startPos.x + this.activeChunkSize;
         let activeChunks: Chunk[][] = [];
-
+        let activeTiles: Tile[][] = [];
         for(let y = 0; y <= maxY - startPos.y; y++) {
             activeChunks[y] = [];
             for(let x = 0; x <= maxX - startPos.x; x++) {
@@ -51,14 +47,29 @@ export class World {
                 let chunk = this.chunks[position.y][position.x];
                 
                 if(chunk == null) 
-                    this.chunks[position.y][position.x] = new Chunk(this.chunkSize, position);
+                    chunk = this.chunks[position.y][position.x] = new Chunk(this.chunkSize, position);
                 
-                activeChunks[y][x] = this.chunks[minY + y][minX + x]; 
+                activeChunks[y][x] = chunk; 
+                activeTiles = activeTiles.concat(chunk.tiles);
             }
         }
 
         this.activeChunks = activeChunks;
+        this.activeTiles = activeTiles;
     }   
+
+    getActiveChunkBounds(viewportSize: number): Bounds {
+
+        let topLeft = this.activeChunks[0][0]
+                            .getWorldPositionBounds()
+                            .topLeft;
+        let bottomRight = this.activeChunks[this.activeChunks.length - 1][this.activeChunkSize - 1]
+                            .getWorldPositionBounds()
+                            .bottomRight;
+
+        
+        return new Bounds(topLeft, bottomRight);
+    }
 
     getChunkPositionFromWorldPosition(position: Vector2): Vector2 {
         let chunk = new Vector2();
@@ -67,6 +78,19 @@ export class World {
         chunk.y = Math.floor(position.y / this.chunkSize.y);
 
         return chunk;
+    }
+
+    getTileByWorldPosition(position: Vector2, chunkSize?: Vector2) {
+        let chunkPos = this.getChunkPositionFromWorldPosition(position);
+        let chunk = this.chunks[chunkPos.y][chunkPos.x];
+
+        let size = chunkSize || this.chunkSize;
+        let targetTileX = Math.floor(position.x % size.x);
+        let targetTileY = Math.floor(position.y % size.y);
+
+        let targetTile = chunk.tiles[targetTileY][targetTileX];
+
+        return targetTile;
     }
 
     getChunk(position: Vector2): Chunk {
@@ -108,29 +132,5 @@ export class World {
             }
         }
         return chunks
-    }
-
-    getTileByWorldPosition(position: Vector2) {
-        let targetChunkX = Math.floor(position.x / this.chunkSize.x)
-        let targetChunkY = Math.floor(position.y / this.chunkSize.y);
-        let targetTileX = Math.floor(position.x % this.chunkSize.x);
-        let targetTileY = Math.floor(position.y % this.chunkSize.y);
-
-        let targetChunk = null;
-        let targetTile = null;
-
-        if (this.chunks[targetChunkY]) {
-            if (this.chunks[targetChunkY][targetChunkX]) {
-                targetChunk = this.chunks[targetChunkY][targetChunkX];
-            }
-        }
-
-        if (targetChunk === null) {
-            targetChunk = this.getChunk(new Vector2(targetChunkX, targetChunkY));
-        }
-
-        targetTile = targetChunk.tiles[targetTileY][targetTileX];
-
-        return targetTile;
     }
 }

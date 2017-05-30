@@ -26,8 +26,8 @@ export class Renderer {
 
     public draw(event: RenderEvent) {
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-        let cellSizeX = Math.ceil(this.canvas.width / this.game.world.chunkSize.x);
-        let cellSizeY = Math.ceil(this.canvas.height / this.game.world.chunkSize.y);
+        let cellSizeX = 8;//Math.ceil(this.canvas.clientWidth / this.game.world.chunkSize.x) / 2;
+        let cellSizeY = 16;//Math.ceil(this.canvas.clientHeight / this.game.world.chunkSize.y) / 2;
         this.ctx.lineWidth = 20;
         this.ctx.font = '11px Courier New';
         this.ctx.textAlign = "center";

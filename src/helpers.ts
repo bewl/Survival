@@ -42,10 +42,7 @@ export class Vector2 {
         return this.x * x + this.y * y;
     };
 
-    isInsideBounds(topLeft: Vector2, bottomRight: Vector2) {
-        return (this.x  >= topLeft.x && this.x <= bottomRight.x
-                && this.y >= topLeft.y && this.y <= bottomRight.y);
-    }
+    
 
 }
 
@@ -395,4 +392,19 @@ export class Perlin {
                 this.lerp(n011, n111, u), w),
             v);
     };
+
+}
+export class Bounds {
+    public topLeft: Vector2;
+    public bottomRight: Vector2;
+    
+    constructor(topLeft: Vector2, bottomRight: Vector2) {
+        this.topLeft = topLeft;
+        this.bottomRight = bottomRight;
+    }
+
+    isInsideBounds(bounds: Bounds) {
+        return (this.topLeft.x  >= bounds.topLeft.x && this.bottomRight.x <= bounds.bottomRight.x
+                && this.topLeft.y >= bounds.topLeft.y && this.bottomRight.y <= bounds.bottomRight.y);
+    }
 }

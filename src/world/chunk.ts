@@ -1,6 +1,6 @@
 import { Container } from 'aurelia-framework';
 import { Tile } from '../tile/tile';
-import { Random, Perlin, Vector2 } from '../helpers';
+import { Random, Perlin, Vector2, Bounds } from '../helpers';
 import tileData from '../tile/data/tiles';
 const TileData = tileData;
 
@@ -31,12 +31,51 @@ export class Chunk {
             this.tiles[y] = [];
             for (let x = 0; x < this.chunkSize.x; x++) {
                 let worldPosition = new Vector2(x + this.worldPosition.x, y + this.worldPosition.y);
+                let chunkIndex = new Vector2(x, y);
+                let tile = this.generateTile(worldPosition, this.position, weightMap, chunkIndex);
 
-                let tile = this.generateTile(worldPosition, this.position, weightMap);
-                
                 this.tiles[y][x] = tile;
             }
         }
+    }
+    getWorldPositionBounds() {
+        let l = this.tiles[0][0].worldPosition;
+        let r = this.tiles[this.tiles.length - 1][this.chunkSize.x - 1].worldPosition;
+        return new Bounds(l, r);
+    }
+
+    getTileSubset(bounds: Bounds): Tile[][] {
+        let chunkBounds = this.getWorldPositionBounds();
+
+        if (bounds.topLeft.y < chunkBounds.topLeft.y)
+            bounds.topLeft.y = chunkBounds.topLeft.y;
+        if (bounds.topLeft.x < chunkBounds.topLeft.x)
+            bounds.topLeft.x = chunkBounds.topLeft.x;
+
+        if (bounds.bottomRight.y > chunkBounds.bottomRight.y)
+            bounds.bottomRight.y = chunkBounds.bottomRight.y
+        if (bounds.bottomRight.x > chunkBounds.bottomRight.x)
+            bounds.bottomRight.x = chunkBounds.bottomRight.x
+        
+        let allInsideBounds = chunkBounds.isInsideBounds(bounds);
+
+        if(allInsideBounds)
+            return this.tiles;
+
+        let startTile = this.getTileByWorldPosition(bounds.topLeft);
+        let endTile = this.getTileByWorldPosition(bounds.bottomRight);
+        
+        let tiles: Tile[][] = [];
+        for(let y = startTile.chunkIndex.y; y <= endTile.chunkIndex.y; y++) {
+            let yPos = y - startTile.chunkIndex.y;
+            tiles[yPos] = [];
+            for(let x = startTile.chunkIndex.x; x <= endTile.chunkIndex.x; x++) {
+                let xPos = x - startTile.chunkIndex.x;
+                tiles[yPos][xPos] = this.tiles[y][x];
+            }
+        }
+
+        return tiles;
     }
 
     generateWeightMap() {
@@ -69,7 +108,17 @@ export class Chunk {
         });
     }
 
-    generateTile(worldPosition: Vector2, chunkPosition: Vector2, weightMap: any[]): Tile {
+    getTileByWorldPosition(position: Vector2, chunkSize?: Vector2) {
+        let size = chunkSize || this.chunkSize;
+        let targetTileX = Math.floor(position.x % (size.x * this.position.x));
+        let targetTileY = Math.floor(position.y % (size.y * this.position.y));
+
+        let targetTile = this.tiles[targetTileY][targetTileX];
+
+        return targetTile;
+    }
+
+    generateTile(worldPosition: Vector2, chunkPosition: Vector2, weightMap: any[], chunkIndex: Vector2): Tile {
         let perlinDivisor = 40;
 
         let tileWeight = Math.ceil(this.perlin.simplex2(worldPosition.x / perlinDivisor, worldPosition.y / perlinDivisor) * TileData.weightMod);
@@ -97,14 +146,12 @@ export class Chunk {
                 }
                 return true;
             }
-
             return false;
-
         });
 
         tileType = TileData.tiles.find(tile => tile.id == tileData.id);
 
-        let tile: Tile = new Tile(chunkPosition, new Vector2(worldPosition.x, worldPosition.y), tileWeight);
+        let tile: Tile = new Tile(chunkPosition, new Vector2(worldPosition.x, worldPosition.y), tileWeight, chunkIndex);
 
         tile.movementCost = tileType.movementCost;
         tile.title = tileType.title;
@@ -118,13 +165,5 @@ export class Chunk {
         return tile;
     }
 
-    getTileByWorldPosition(position: Vector2, chunkSize?: Vector2) {
-        let size = chunkSize || this.chunkSize;
-        let targetTileX = Math.floor(position.x % size.x);
-        let targetTileY = Math.floor(position.y % size.y);
 
-        let targetTile = this.tiles[targetTileY][targetTileX];
-
-        return targetTile;
-    }
 }

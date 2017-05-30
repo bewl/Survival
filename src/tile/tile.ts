@@ -9,25 +9,16 @@ export class Tile {
     public color: string;
     public chunkPosition: Vector2;
     public worldPosition: Vector2;
+    public chunkIndex: Vector2;
     public isPlayer: boolean;
     public tileWeight: number;
 
-    constructor(chunkPosition: Vector2, worldPosition: Vector2, tileWeight: number) {
+    constructor(chunkPosition: Vector2, worldPosition: Vector2, tileWeight: number, chunkIndex: Vector2) {
         this.worldPosition = worldPosition;
         this.chunkPosition = chunkPosition;
         this.inventory = new Inventory();
         this.isPlayer = false;
         this.tileWeight = tileWeight;
-        
-        this.generateData()
-    }
-
-    generateData() {
-        // let data = tileData.find(tile => tile.weight.find(weight => weight.min <= this.tileWeight && weight.max >= this.tileWeight) != null );
-
-        // if(data) {
-        //     this.color = data.color;
-        //     this.symbol = String.fromCharCode(data.symbol);
-        // }
+        this.chunkIndex = chunkIndex;
     }
 }
