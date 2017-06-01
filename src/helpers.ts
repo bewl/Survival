@@ -2,6 +2,7 @@ interface Enum {
     [id: number]: string
 }
 
+
 export function GenerateHashCode (phrase: string): number {
   let hash: number = 0;
   let i: number;
@@ -20,6 +21,16 @@ export function GetEnumElements(e: Enum): Array<string> {
     return Object.keys(e).map(a => e[a]).filter(a => typeof a === 'string');
 }
 
+export class KeyValuePair {
+    public key: string;
+    public value: any;
+
+    constructor(key: string, value: any){
+        this.key = key;
+        this.value = value;
+    }
+}
+
 export class Guid {
     static newGuid() {
         return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
@@ -32,7 +43,7 @@ export class Guid {
 export class Vector2 {
     public x: number;
     public y: number;
-
+    
     constructor(x?:number, y?:number) {
         this.x = x || 0;
         this.y = y || 0;
@@ -42,8 +53,13 @@ export class Vector2 {
         return this.x * x + this.y * y;
     };
 
+    toString() {
+      return `x:${this.x}y:${this.y}`;  
+    };
     
-
+    static zero() {
+        return new Vector2(0, 0);
+    }
 }
 
 export class Vector3 {

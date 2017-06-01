@@ -19,6 +19,14 @@ define('helpers',["require", "exports"], function (require, exports) {
         return Object.keys(e).map(function (a) { return e[a]; }).filter(function (a) { return typeof a === 'string'; });
     }
     exports.GetEnumElements = GetEnumElements;
+    var KeyValuePair = (function () {
+        function KeyValuePair(key, value) {
+            this.key = key;
+            this.value = value;
+        }
+        return KeyValuePair;
+    }());
+    exports.KeyValuePair = KeyValuePair;
     var Guid = (function () {
         function Guid() {
         }
@@ -40,6 +48,13 @@ define('helpers',["require", "exports"], function (require, exports) {
             return this.x * x + this.y * y;
         };
         ;
+        Vector2.prototype.toString = function () {
+            return "x:" + this.x + "y:" + this.y;
+        };
+        ;
+        Vector2.zero = function () {
+            return new Vector2(0, 0);
+        };
         return Vector2;
     }());
     exports.Vector2 = Vector2;
@@ -548,6 +563,7 @@ define('world/chunk',["require", "exports", "aurelia-framework", "../tile/tile",
             this.perlin = aurelia_framework_1.Container.instance.get(helpers_1.Perlin);
             this.tiles = [];
             this.position = position;
+            this.chunkId = position.toString();
             this.worldPosition = worldPosition ? worldPosition : new helpers_1.Vector2((this.position.x * this.chunkSize.x), (position.y * this.chunkSize.y));
             this.seedChunk();
         }
@@ -623,8 +639,14 @@ define('world/chunk',["require", "exports", "aurelia-framework", "../tile/tile",
         };
         Chunk.prototype.getTileByWorldPosition = function (position, chunkSize) {
             var size = chunkSize || this.chunkSize;
-            var targetTileX = Math.floor(position.x % (size.x * this.position.x));
-            var targetTileY = Math.floor(position.y % (size.y * this.position.y));
+            var targetTileX = Math.floor(Math.abs(position.x) % this.chunkSize.x);
+            var targetTileY = Math.floor(Math.abs(position.y) % this.chunkSize.y);
+            if (Math.sign(position.x) == -1) {
+                targetTileX = targetTileX ? this.chunkSize.x - Math.abs(targetTileX) : 0;
+            }
+            if (Math.sign(position.y) == -1) {
+                targetTileY = targetTileY ? this.chunkSize.y - Math.abs(targetTileY) : 0;
+            }
             var targetTile = this.tiles[targetTileY][targetTileX];
             return targetTile;
         };
@@ -714,13 +736,13 @@ define('world/world',["require", "exports", "aurelia-framework", "./chunk", "../
         };
         World.prototype.getChunkPositionFromWorldPosition = function (position) {
             var chunk = new helpers_1.Vector2();
-            chunk.x = Math.floor(position.x / this.chunkSize.x);
-            chunk.y = Math.floor(position.y / this.chunkSize.y);
+            chunk.x = Math.ceil(position.x / this.chunkSize.x);
+            chunk.y = Math.ceil(position.y / this.chunkSize.y);
             return chunk;
         };
         World.prototype.getTileByWorldPosition = function (position, chunkSize) {
             var chunkPos = this.getChunkPositionFromWorldPosition(position);
-            var chunk = this.chunks[chunkPos.y][chunkPos.x];
+            var chunk = this.getChunk(chunkPos);
             var size = chunkSize || this.chunkSize;
             var targetTileX = Math.floor(position.x % size.x);
             var targetTileY = Math.floor(position.y % size.y);
@@ -728,37 +750,12 @@ define('world/world',["require", "exports", "aurelia-framework", "./chunk", "../
             return targetTile;
         };
         World.prototype.getChunk = function (position) {
-            var chunk = null;
-            if (this.chunks[position.y] && this.chunks[position.y][position.x]) {
-                chunk = this.chunks[position.y][position.x];
-            }
-            else {
+            var chunk = this.chunks.find(function (a) { return a.chunkId == position.toString(); });
+            if (chunk == null) {
                 chunk = new chunk_1.Chunk(new helpers_1.Vector2(this.chunkSize.x, this.chunkSize.y), new helpers_1.Vector2(position.x, position.y));
-                if (!this.chunks[position.y])
-                    this.chunks[position.y] = [];
-                this.chunks[position.y][position.x] = chunk;
+                this.chunks.push(chunk);
             }
             return chunk;
-        };
-        World.prototype.getChunks = function (start, end) {
-            var numChunksX = end.x - start.x;
-            var numChunksY = start.y - end.y;
-            var chunks = [];
-            for (var y = start.y; y <= end.y; y++) {
-                chunks[y] = [];
-                for (var x = start.x; x <= end.x; x++) {
-                    if (this.chunks[y] && this.chunks[y][x]) {
-                        chunks[y][x] = this.chunks[y][x];
-                    }
-                    else {
-                        chunks[y][x] = new chunk_1.Chunk(new helpers_1.Vector2(this.chunkSize.x, this.chunkSize.y), new helpers_1.Vector2(x, y));
-                        if (!this.chunks[y])
-                            this.chunks[y] = [];
-                        this.chunks[y][x] = chunks[y][x];
-                    }
-                }
-            }
-            return chunks;
         };
         return World;
     }());
@@ -1280,7 +1277,7 @@ define('game',["require", "exports", "aurelia-framework", "./actor/player", "./i
         Game.prototype.init = function () {
             this.world.generateSeed(helpers_2.GenerateHashCode(this.seed));
             this.world.chunks = [];
-            var position = new helpers_1.Vector2((this.world.chunkSize.x * this.maxWorldSize) / 2, (this.world.chunkSize.y * this.maxWorldSize) / 2);
+            var position = helpers_1.Vector2.zero();
             this.player.setPlayerPosition(position);
         };
         return Game;

@@ -2,10 +2,11 @@ import { inject, Container } from 'aurelia-framework';
 import { Chunk } from './chunk';
 import { Tile } from '../tile/tile';
 
-import { Perlin, Random, Vector2, Bounds } from '../helpers';
+import { Perlin, Random, Vector2, Bounds, KeyValuePair } from '../helpers';
 
 export class World {
-    public chunks: Chunk[][];
+    //public chunks: Chunk[][];
+    public chunks: Chunk[];
     public activeChunks: Chunk[][]; //the chunks including and surrounding the camera viewport
     public activeTiles: Tile[][];
     public activeChunkSize: number; //the amount of active chunks in a given direction
@@ -74,15 +75,15 @@ export class World {
     getChunkPositionFromWorldPosition(position: Vector2): Vector2 {
         let chunk = new Vector2();
 
-        chunk.x = Math.floor(position.x / this.chunkSize.x);
-        chunk.y = Math.floor(position.y / this.chunkSize.y);
+        chunk.x = Math.ceil(position.x / this.chunkSize.x); //Cheers to Tylar
+        chunk.y = Math.ceil(position.y / this.chunkSize.y);
 
         return chunk;
     }
 
     getTileByWorldPosition(position: Vector2, chunkSize?: Vector2) {
         let chunkPos = this.getChunkPositionFromWorldPosition(position);
-        let chunk = this.chunks[chunkPos.y][chunkPos.x];
+        let chunk = this.getChunk(chunkPos);// this.chunks[chunkPos.y][chunkPos.x];
 
         let size = chunkSize || this.chunkSize;
         let targetTileX = Math.floor(position.x % size.x);
@@ -94,43 +95,12 @@ export class World {
     }
 
     getChunk(position: Vector2): Chunk {
-        let chunk: Chunk = null;
+        let chunk: Chunk = this.chunks.find(a => a.chunkId == position.toString());
 
-        if (this.chunks[position.y] && this.chunks[position.y][position.x]) {
-            chunk = this.chunks[position.y][position.x];
-        } else {
-
+        if (chunk == null) {
             chunk = new Chunk(new Vector2(this.chunkSize.x, this.chunkSize.y), new Vector2(position.x, position.y));
-
-            if (!this.chunks[position.y])
-                this.chunks[position.y] = [];
-
-            this.chunks[position.y][position.x] = chunk;
+            this.chunks.push(chunk);
         }
         return chunk;
-    }
-
-    getChunks(start: Vector2, end: Vector2): Chunk[][] {
-        let numChunksX = end.x - start.x;
-        let numChunksY = start.y - end.y;
-
-        let chunks: Chunk[][] = [];
-
-        for (let y = start.y; y <= end.y; y++) {
-            chunks[y] = [];
-            for (let x = start.x; x <= end.x; x++) {
-                if (this.chunks[y] && this.chunks[y][x]) {
-                    chunks[y][x] = this.chunks[y][x];
-                } else {
-                    chunks[y][x] = new Chunk(new Vector2(this.chunkSize.x, this.chunkSize.y), new Vector2(x, y));
-
-                    if (!this.chunks[y])
-                        this.chunks[y] = [];
-
-                    this.chunks[y][x] = chunks[y][x];
-                }
-            }
-        }
-        return chunks
     }
 }

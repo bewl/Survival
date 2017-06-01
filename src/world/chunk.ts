@@ -10,7 +10,7 @@ export class Chunk {
     public worldPosition: Vector2;
     public chunkSize: Vector2;
     public position: Vector2 = null;
-
+    public chunkId: string;
     private perlin: Perlin;
 
     constructor(chunkSize: Vector2, position: Vector2 = new Vector2(), worldPosition?: Vector2) {
@@ -18,6 +18,7 @@ export class Chunk {
         this.perlin = Container.instance.get(Perlin) as Perlin;
         this.tiles = [];
         this.position = position;
+        this.chunkId = position.toString();
         this.worldPosition = worldPosition ? worldPosition : new Vector2((this.position.x * this.chunkSize.x), (position.y * this.chunkSize.y));
 
         this.seedChunk();
@@ -110,8 +111,18 @@ export class Chunk {
 
     getTileByWorldPosition(position: Vector2, chunkSize?: Vector2) {
         let size = chunkSize || this.chunkSize;
-        let targetTileX = Math.floor(position.x % (size.x * this.position.x));
-        let targetTileY = Math.floor(position.y % (size.y * this.position.y));
+
+        
+        let targetTileX =  Math.floor(Math.abs(position.x) % this.chunkSize.x);
+        let targetTileY = Math.floor(Math.abs(position.y) % this.chunkSize.y);
+        
+        if(Math.sign(position.x) == -1) {
+            targetTileX = targetTileX ? this.chunkSize.x - Math.abs(targetTileX) : 0;
+        }
+
+        if(Math.sign(position.y) == -1) {
+            targetTileY = targetTileY ? this.chunkSize.y - Math.abs(targetTileY) : 0;
+        }
 
         let targetTile = this.tiles[targetTileY][targetTileX];
 
