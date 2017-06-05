@@ -16,9 +16,9 @@ let tileData = {
         },
         {
             id: "tree",
-            weight: { min: WATER_MAX + .003, max: 0.47 },
+            weight: { min: WATER_MAX + .003, max: 0.60 },
             random: true,
-            randomPercent: 0.44,
+            randomPercent: 0.30,
             symbol: 165,
             color: '#228B22',
             movementCost: -1,
@@ -27,7 +27,7 @@ let tileData = {
 
         {
             id: "stone",
-            weight: { min: 0.40, max: 0.64 },
+            weight: { min: 0.40, max: 0.5 },
             random: true,
             randomPercent: 0.01,
             symbol: 186,

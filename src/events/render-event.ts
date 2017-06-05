@@ -1,11 +1,12 @@
 import {Tile} from '../tile/tile';
+import { Vector2 } from '../helpers'; 
 
 export class RenderEvent {
     symbols: Tile[][];
-    scaleX: number;
+    viewportSize: Vector2;
 
-    constructor(symbols: Tile[][], scaleX:number) {
-        this.scaleX = scaleX;
+    constructor(symbols: Tile[][], viewportSize: Vector2) {
         this.symbols = symbols;
+        this.viewportSize = viewportSize;
     }
 }

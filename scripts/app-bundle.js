@@ -55,6 +55,9 @@ define('helpers',["require", "exports"], function (require, exports) {
         Vector2.zero = function () {
             return new Vector2(0, 0);
         };
+        Vector2.prototype.equals = function (vector2) {
+            return this.y === vector2.y && this.x == vector2.x;
+        };
         return Vector2;
     }());
     exports.Vector2 = Vector2;
@@ -518,9 +521,9 @@ define('tile/data/tiles',["require", "exports"], function (require, exports) {
             },
             {
                 id: "tree",
-                weight: { min: WATER_MAX + .003, max: 0.47 },
+                weight: { min: WATER_MAX + .003, max: 0.60 },
                 random: true,
-                randomPercent: 0.44,
+                randomPercent: 0.30,
                 symbol: 165,
                 color: '#228B22',
                 movementCost: -1,
@@ -528,7 +531,7 @@ define('tile/data/tiles',["require", "exports"], function (require, exports) {
             },
             {
                 id: "stone",
-                weight: { min: 0.40, max: 0.64 },
+                weight: { min: 0.40, max: 0.5 },
                 random: true,
                 randomPercent: 0.01,
                 symbol: 186,
@@ -614,8 +617,8 @@ define('world/chunk',["require", "exports", "aurelia-framework", "../tile/tile",
         Chunk.prototype.generateWeightMap = function () {
             var weightMap = [];
             TileData.tiles.forEach(function (tile) {
-                var min = tile.weight.min == null ? null : (tile.weight.min * tiles_1.default.weightRange) - tiles_1.default.weightMod;
-                var max = tile.weight.max == null ? null : (tile.weight.max * tiles_1.default.weightRange) - tiles_1.default.weightMod;
+                var min = tile.weight.min == null ? null : (tile.weight.min * TileData.weightRange) - TileData.weightMod;
+                var max = tile.weight.max == null ? null : (tile.weight.max * TileData.weightRange) - TileData.weightMod;
                 weightMap.push({
                     id: tile.id,
                     random: tile.random,
@@ -651,21 +654,21 @@ define('world/chunk',["require", "exports", "aurelia-framework", "../tile/tile",
             return targetTile;
         };
         Chunk.prototype.generateTile = function (worldPosition, chunkPosition, weightMap, chunkIndex) {
-            var _this = this;
             var perlinDivisor = 40;
             var tileWeight = Math.ceil(this.perlin.simplex2(worldPosition.x / perlinDivisor, worldPosition.y / perlinDivisor) * TileData.weightMod);
             var tileType = null;
             var maxLayer = 1000;
             var currentLayer = maxLayer;
             var tileData;
+            var seed = this.perlin.seedValue * parseInt('' + Math.abs(worldPosition.x + worldPosition.y)) + tileWeight * 10000000;
             tileData = weightMap.find(function (tile) {
                 if (((tile.weight.max >= tileWeight) || tile.weight.max == null)
                     && ((tile.weight.min <= tileWeight) || tile.weight.min == null)) {
                     if (tile.randomPercent != null && tile.randomPercent != 0) {
                         var show = true;
-                        var rnd = new helpers_1.Random((_this.perlin.seedValue * parseInt('' + worldPosition.x + worldPosition.y)) + tileWeight * 10000000);
+                        var rnd = new helpers_1.Random(seed);
                         var num = rnd.nextInt(1, 100);
-                        show = num <= tile.randomPercent * 100;
+                        show = num <= Math.abs(tile.randomPercent) * 100;
                         return show;
                     }
                     return true;
@@ -692,9 +695,7 @@ define('world/world',["require", "exports", "aurelia-framework", "./chunk", "../
     var World = (function () {
         function World() {
             this.viewportScale = 7;
-            this.viewPortAspectRatio = 2.02;
             this.perlin = aurelia_framework_1.Container.instance.get(helpers_1.Perlin);
-            this.worldSize = new helpers_1.Vector2(2, 1);
             this.chunkSize = new helpers_1.Vector2(100, 100);
             this.chunks = [];
             this.seed = new helpers_1.Random(Math.floor(Math.random() * 32000)).nextDouble();
@@ -736,17 +737,14 @@ define('world/world',["require", "exports", "aurelia-framework", "./chunk", "../
         };
         World.prototype.getChunkPositionFromWorldPosition = function (position) {
             var chunk = new helpers_1.Vector2();
-            chunk.x = Math.ceil(position.x / this.chunkSize.x);
-            chunk.y = Math.ceil(position.y / this.chunkSize.y);
+            chunk.x = Math.floor(position.x / this.chunkSize.x);
+            chunk.y = Math.floor(position.y / this.chunkSize.y);
             return chunk;
         };
         World.prototype.getTileByWorldPosition = function (position, chunkSize) {
             var chunkPos = this.getChunkPositionFromWorldPosition(position);
             var chunk = this.getChunk(chunkPos);
-            var size = chunkSize || this.chunkSize;
-            var targetTileX = Math.floor(position.x % size.x);
-            var targetTileY = Math.floor(position.y % size.y);
-            var targetTile = chunk.tiles[targetTileY][targetTileX];
+            var targetTile = chunk.getTileByWorldPosition(position);
             return targetTile;
         };
         World.prototype.getChunk = function (position) {
@@ -836,6 +834,8 @@ define('actor/player',["require", "exports", "aurelia-framework", "../helpers", 
             this.inventory.addItem(item);
         };
         Player.prototype.attack = function () {
+        };
+        Player.prototype.use = function () {
         };
         Player.prototype.equip = function (item) {
         };
@@ -1088,17 +1088,21 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
-define('input/input',["require", "exports", "aurelia-framework", "../actor/player"], function (require, exports, aurelia_framework_1, player_1) {
+define('input/input',["require", "exports", "aurelia-framework", "../actor/player", "aurelia-event-aggregator"], function (require, exports, aurelia_framework_1, player_1, aurelia_event_aggregator_1) {
     "use strict";
     var Input = (function () {
-        function Input(player) {
+        function Input(player, ea) {
             this.lastPressed = 0;
             this.player = player;
             this.boundHandler = this.handleKeyInput.bind(this);
+            this.mouseWheelHandler = this.handleMouseWheel.bind(this);
             window.addEventListener('keypress', this.boundHandler, false);
+            window.addEventListener('mousewheel', this.mouseWheelHandler, false);
+            this.eventAggregator = ea;
         }
         Input.prototype.deactivate = function () {
             window.removeEventListener('keypress', this.boundHandler);
+            window.removeEventListener('mousewheel', this.mouseWheelHandler);
         };
         Input.prototype.movePlayer = function (direction) {
             this.player.move(direction, 1);
@@ -1112,9 +1116,16 @@ define('input/input',["require", "exports", "aurelia-framework", "../actor/playe
                 timeout = setTimeout(later, wait);
             };
         };
+        Input.prototype.handleMouseWheel = function (event) {
+            var e = event;
+            var delta = Math.max(-1, Math.min(1, (e.wheelDelta || -e.detail)));
+            this.eventAggregator.publish('ZoomChanged', delta);
+        };
         Input.prototype.handleKeyInput = function (event) {
             var time = new Date().getTime();
-            if (time > this.lastPressed + 40) {
+            var delta = 10;
+            var diagDelta = delta * 2;
+            if (time > this.lastPressed + delta) {
                 switch (event.code.toUpperCase()) {
                     case "65":
                         break;
@@ -1123,14 +1134,19 @@ define('input/input',["require", "exports", "aurelia-framework", "../actor/playe
                     case "KEYC":
                         this.player.collisionEnabled = !this.player.collisionEnabled;
                         break;
+                    case "KEYE":
+                        this.player.use();
+                        break;
                     case "NUMPAD1":
                         this.movePlayer('sw');
+                        time += diagDelta;
                         break;
                     case "NUMPAD2":
                         this.movePlayer('s');
                         break;
                     case "NUMPAD3":
                         this.movePlayer('se');
+                        time += diagDelta;
                         break;
                     case "NUMPAD4":
                         this.movePlayer('w');
@@ -1140,12 +1156,14 @@ define('input/input',["require", "exports", "aurelia-framework", "../actor/playe
                         break;
                     case "NUMPAD7":
                         this.movePlayer('nw');
+                        time += diagDelta;
                         break;
                     case "NUMPAD8":
                         this.movePlayer('n');
                         break;
                     case "NUMPAD9":
                         this.movePlayer('ne');
+                        time += diagDelta;
                         break;
                 }
                 this.lastPressed = time;
@@ -1154,8 +1172,8 @@ define('input/input',["require", "exports", "aurelia-framework", "../actor/playe
         return Input;
     }());
     Input = __decorate([
-        aurelia_framework_1.inject(player_1.Player),
-        __metadata("design:paramtypes", [Object])
+        aurelia_framework_1.inject(player_1.Player, aurelia_event_aggregator_1.EventAggregator),
+        __metadata("design:paramtypes", [Object, Object])
     ], Input);
     exports.Input = Input;
 });
@@ -1163,9 +1181,9 @@ define('input/input',["require", "exports", "aurelia-framework", "../actor/playe
 define('events/render-event',["require", "exports"], function (require, exports) {
     "use strict";
     var RenderEvent = (function () {
-        function RenderEvent(symbols, scaleX) {
-            this.scaleX = scaleX;
+        function RenderEvent(symbols, viewportSize) {
             this.symbols = symbols;
+            this.viewportSize = viewportSize;
         }
         return RenderEvent;
     }());
@@ -1181,70 +1199,104 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
-define('camera',["require", "exports", "aurelia-framework", "./helpers", "./world/world", "aurelia-event-aggregator", "./events/render-event"], function (require, exports, aurelia_framework_1, helpers_1, world_1, aurelia_event_aggregator_1, render_event_1) {
+define('camera',["require", "exports", "aurelia-framework", "./actor/player", "./helpers", "./world/world", "aurelia-event-aggregator", "./events/render-event"], function (require, exports, aurelia_framework_1, player_1, helpers_1, world_1, aurelia_event_aggregator_1, render_event_1) {
     "use strict";
     var Camera = (function () {
-        function Camera(world, eventAggregator) {
+        function Camera(world, eventAggregator, player) {
             var _this = this;
             this._eventAggregator = eventAggregator;
             this.position = null;
             this.world = world;
-            this.viewportSize = new helpers_1.Vector2(100, 50);
-            this.scale = new helpers_1.Vector2(2, 2);
+            this.zoomLevel = 7;
+            this.viewportSize = new helpers_1.Vector2(128, 64);
             this.viewport = null;
+            this.player = player;
             this._eventAggregator.subscribe('PlayerMoved', function (event) {
                 _this.translate(event.position);
             });
+            this._eventAggregator.subscribe('Update', function (playerPos) {
+                _this.updateViewport(playerPos);
+            });
+            this._eventAggregator.subscribe('ZoomChanged', function (dir) {
+                var minSize = 16;
+                var maxSize = 256;
+                if (dir == 1) {
+                    var x = Math.pow(2, _this.zoomLevel - 1) / 2;
+                    if (x > minSize) {
+                        _this.viewportSize.x = x;
+                        _this.viewportSize.y = x / 2;
+                        _this.zoomLevel--;
+                        _this.updateViewport(_this.player.position);
+                    }
+                }
+                else if (dir == -1) {
+                    var x = Math.pow(2, _this.zoomLevel + 1) / 2;
+                    if (x < maxSize) {
+                        _this.viewportSize.x = x;
+                        _this.viewportSize.y = x / 2;
+                        _this.zoomLevel++;
+                        _this.updateViewport(_this.player.position);
+                    }
+                }
+            });
         }
         Camera.prototype.translate = function (position) {
-            var startChunk = new helpers_1.Vector2(position.x - Math.floor(this.viewportSize.x / 2), position.y - Math.floor(this.viewportSize.y / 2));
-            this.updateViewport(startChunk, position);
+            this.updateViewport(position);
             this.position = position;
         };
         Camera.prototype.setIsPlayer = function (tile) {
             var playerTile = this.world.getTileByWorldPosition(tile);
             playerTile.isPlayer = true;
         };
-        Camera.prototype.updateViewport = function (startPos, playerPos) {
+        Camera.prototype.updateViewport = function (playerPosition) {
+            var canvas = document.getElementById("canvas");
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            this.viewportSize = new helpers_1.Vector2(Math.pow(2, this.zoomLevel), Math.pow(2, this.zoomLevel) / 2);
+            var playerPos = playerPosition || this.playerPositionCache;
             var startTilePos = new helpers_1.Vector2(playerPos.x - Math.floor(this.viewportSize.x / 2), playerPos.y - Math.floor(this.viewportSize.y / 2));
             var endTilePos = new helpers_1.Vector2(startTilePos.x + this.viewportSize.x, startTilePos.y + this.viewportSize.y);
             var topLeftChunkPos = this.world.getChunkPositionFromWorldPosition(startTilePos);
             var bottomRightChunkPos = this.world.getChunkPositionFromWorldPosition(endTilePos);
-            var viewportBuffer = [];
-            for (var y = topLeftChunkPos.y; y <= bottomRightChunkPos.y; y++) {
-                var yPos = y - topLeftChunkPos.y;
-                var yCount = viewportBuffer.length;
-                for (var x = topLeftChunkPos.x; x <= bottomRightChunkPos.x; x++) {
-                    var xPos = x - topLeftChunkPos.x;
-                    var chunks = this.world.getChunk(new helpers_1.Vector2(x, y));
-                    var startTile = startTilePos;
-                    var endTile = endTilePos;
-                    var tiles = chunks.getTileSubset(new helpers_1.Bounds(new helpers_1.Vector2(startTile.x, startTile.y), new helpers_1.Vector2(endTile.x, endTile.y)));
-                    for (var yy = 0; yy < tiles.length; yy++) {
-                        var yBuffer = yy + (yPos * yCount);
-                        if (viewportBuffer[yBuffer] == undefined)
-                            viewportBuffer[yBuffer] = [];
-                        viewportBuffer[yBuffer] = viewportBuffer[yBuffer].concat(tiles[yy]);
+            if (playerPosition != null) {
+                var viewportBuffer = [];
+                for (var y = topLeftChunkPos.y; y <= bottomRightChunkPos.y; y++) {
+                    var yPos = y - topLeftChunkPos.y;
+                    var yCount = viewportBuffer.length;
+                    for (var x = topLeftChunkPos.x; x <= bottomRightChunkPos.x; x++) {
+                        var xPos = x - topLeftChunkPos.x;
+                        var chunks = this.world.getChunk(new helpers_1.Vector2(x, y));
+                        var startTile = startTilePos;
+                        var endTile = endTilePos;
+                        var tiles = chunks.getTileSubset(new helpers_1.Bounds(new helpers_1.Vector2(startTile.x, startTile.y), new helpers_1.Vector2(endTile.x, endTile.y)));
+                        var yy = 0;
+                        for (yy; yy < tiles.length; yy++) {
+                            var yBuffer = yy + yCount;
+                            if (viewportBuffer[yBuffer] == undefined)
+                                viewportBuffer[yBuffer] = [];
+                            viewportBuffer[yBuffer] = viewportBuffer[yBuffer].concat(tiles[yy]);
+                        }
                     }
                 }
+                var playerTileCache = null;
+                if (this.viewport != null)
+                    playerTileCache = this.viewport[Math.floor(this.viewport.length / 2)][Math.floor(this.viewportSize.x / 2)];
+                this.viewport = [];
+                this.viewport = viewportBuffer;
+                if (playerTileCache)
+                    playerTileCache.isPlayer = false;
             }
-            var playerTileCache = null;
-            if (this.viewport != null)
-                playerTileCache = this.viewport[Math.floor(this.viewportSize.y / 2)][Math.floor(this.viewportSize.x / 2)];
-            this.viewport = [];
-            this.viewport = viewportBuffer;
             var playerTile = this.viewport[Math.floor(this.viewportSize.y / 2)][Math.floor(this.viewportSize.x / 2)];
-            if (playerTileCache)
-                playerTileCache.isPlayer = false;
             playerTile.isPlayer = true;
+            this.playerPositionCache = playerTile.worldPosition;
             var flattendTiles = [].concat.apply([], this.viewport);
-            this._eventAggregator.publish('RenderEvent', new render_event_1.RenderEvent(this.viewport, this.viewportScale));
+            this._eventAggregator.publish('RenderEvent', new render_event_1.RenderEvent(this.viewport, this.viewportSize));
         };
         return Camera;
     }());
     Camera = __decorate([
-        aurelia_framework_1.inject(world_1.World, aurelia_event_aggregator_1.EventAggregator),
-        __metadata("design:paramtypes", [Object, Object])
+        aurelia_framework_1.inject(world_1.World, aurelia_event_aggregator_1.EventAggregator, player_1.Player),
+        __metadata("design:paramtypes", [Object, Object, Object])
     ], Camera);
     exports.Camera = Camera;
 });
@@ -1277,7 +1329,7 @@ define('game',["require", "exports", "aurelia-framework", "./actor/player", "./i
         Game.prototype.init = function () {
             this.world.generateSeed(helpers_2.GenerateHashCode(this.seed));
             this.world.chunks = [];
-            var position = helpers_1.Vector2.zero();
+            var position = new helpers_1.Vector2(30000, 30000);
             this.player.setPlayerPosition(position);
         };
         return Game;
@@ -1316,26 +1368,13 @@ define('renderer',["require", "exports", "aurelia-event-aggregator", "aurelia-fr
         ;
         Renderer.prototype.draw = function (event) {
             this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-            var cellSizeX = 8;
-            var cellSizeY = 16;
-            this.ctx.lineWidth = 20;
-            this.ctx.font = '11px Courier New';
-            this.ctx.textAlign = "center";
+            var cellSizeX = Math.ceil(this.canvas.width / event.viewportSize.x);
+            var cellSizeY = Math.ceil(this.canvas.height / event.viewportSize.y);
             for (var y = 0; y < event.symbols.length; y++) {
                 var row = event.symbols[y];
                 for (var x = 0; x < row.length; x++) {
                     this.ctx.fillStyle = event.symbols[y][x].isPlayer ? "blue" : event.symbols[y][x].color;
-                    var symbol = event.symbols[y][x].isPlayer ? "@" : event.symbols[y][x].symbol;
-                    if (event.symbols[y][x].isPlayer) {
-                        this.ctx.shadowColor = "white";
-                        this.ctx.shadowBlur = 12;
-                        this.ctx.lineWidth = 2;
-                        this.ctx.strokeText(symbol, x * cellSizeX, y * cellSizeY);
-                    }
-                    else {
-                        this.ctx.shadowBlur = 0;
-                    }
-                    this.ctx.fillText(symbol, x * cellSizeX, y * cellSizeY);
+                    this.ctx.fillRect(x * cellSizeX, y * cellSizeY, cellSizeX, cellSizeY);
                 }
             }
         };
@@ -1357,17 +1396,20 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
-define('app',["require", "exports", "aurelia-framework", "./game", "./renderer", "aurelia-event-aggregator"], function (require, exports, aurelia_framework_1, game_1, renderer_1, aurelia_event_aggregator_1) {
+define('app',["require", "exports", "aurelia-framework", "./game", "./renderer"], function (require, exports, aurelia_framework_1, game_1, renderer_1) {
     "use strict";
     var App = (function () {
-        function App(game, eventAggregator, renderer) {
-            this._eventAggregator = eventAggregator;
+        function App(game, renderer) {
             this.renderer = renderer;
             this.game = game;
         }
         App.prototype.attached = function () {
+            var _this = this;
             this.renderer.init(this.canvas);
             this.init();
+            window.addEventListener('resize', function () {
+                _this.game.camera.updateViewport();
+            }, false);
         };
         App.prototype.init = function () {
             this.game.init();
@@ -1388,8 +1430,8 @@ define('app',["require", "exports", "aurelia-framework", "./game", "./renderer",
         return App;
     }());
     App = __decorate([
-        aurelia_framework_1.inject(game_1.Game, aurelia_event_aggregator_1.EventAggregator, renderer_1.Renderer),
-        __metadata("design:paramtypes", [game_1.Game, aurelia_event_aggregator_1.EventAggregator, renderer_1.Renderer])
+        aurelia_framework_1.inject(game_1.Game, renderer_1.Renderer),
+        __metadata("design:paramtypes", [game_1.Game, renderer_1.Renderer])
     ], App);
     exports.App = App;
 });
@@ -1540,6 +1582,26 @@ define('main',["require", "exports", "./environment", "./item/item-module-contai
     exports.configure = configure;
 });
 
+define('dungeon/dungeon',["require", "exports"], function (require, exports) {
+    "use strict";
+    var Dungeon = (function () {
+        function Dungeon() {
+        }
+        return Dungeon;
+    }());
+    exports.Dungeon = Dungeon;
+});
+
+define('dungeon/room',["require", "exports"], function (require, exports) {
+    "use strict";
+    var Room = (function () {
+        function Room() {
+        }
+        return Room;
+    }());
+    exports.Room = Room;
+});
+
 define('input/keybinds',["require", "exports"], function (require, exports) {
     "use strict";
     var Keybinds;
@@ -1547,16 +1609,17 @@ define('input/keybinds',["require", "exports"], function (require, exports) {
         Keybinds[Keybinds["A"] = 0] = "A";
         Keybinds[Keybinds["B"] = 1] = "B";
         Keybinds[Keybinds["C"] = 2] = "C";
-        Keybinds[Keybinds["NUM1"] = 3] = "NUM1";
-        Keybinds[Keybinds["NUM2"] = 4] = "NUM2";
-        Keybinds[Keybinds["NUM3"] = 5] = "NUM3";
-        Keybinds[Keybinds["NUM4"] = 6] = "NUM4";
-        Keybinds[Keybinds["NUM5"] = 7] = "NUM5";
-        Keybinds[Keybinds["NUM6"] = 8] = "NUM6";
-        Keybinds[Keybinds["NUM7"] = 9] = "NUM7";
-        Keybinds[Keybinds["NUM8"] = 10] = "NUM8";
-        Keybinds[Keybinds["NUM9"] = 11] = "NUM9";
-        Keybinds[Keybinds["NUM0"] = 12] = "NUM0";
+        Keybinds[Keybinds["E"] = 3] = "E";
+        Keybinds[Keybinds["NUM1"] = 4] = "NUM1";
+        Keybinds[Keybinds["NUM2"] = 5] = "NUM2";
+        Keybinds[Keybinds["NUM3"] = 6] = "NUM3";
+        Keybinds[Keybinds["NUM4"] = 7] = "NUM4";
+        Keybinds[Keybinds["NUM5"] = 8] = "NUM5";
+        Keybinds[Keybinds["NUM6"] = 9] = "NUM6";
+        Keybinds[Keybinds["NUM7"] = 10] = "NUM7";
+        Keybinds[Keybinds["NUM8"] = 11] = "NUM8";
+        Keybinds[Keybinds["NUM9"] = 12] = "NUM9";
+        Keybinds[Keybinds["NUM0"] = 13] = "NUM0";
     })(Keybinds = exports.Keybinds || (exports.Keybinds = {}));
 });
 
@@ -1613,5 +1676,5 @@ define('tile/modules/tree',["require", "exports"], function (require, exports) {
     exports.Tree = Tree;
 });
 
-define('text!app.html', ['module'], function(module) { module.exports = "<template>\r\n    <canvas ref=\"canvas\" width=\"${game.maxWorldSize * 4}\" height=\"${game.maxWorldSize * 4}\"> Your browser does not support canvas.</canvas>\r\n    <div id=\"map\" style=\"position: relative; background-color:black;font-family: 'Courier New', Courier, monospace; width: 100%; height: 100%;\">\r\n        <div id=\"ui\">\r\n            <div style=\"display: inline-block;\">\r\n                <h2>Items</h2>\r\n                <ul>\r\n                    <li repeat.for=\"item of game.itemContext.items\" click.delegate=\"AddItem(item)\">\r\n                        ${item.title}\r\n                    </li>\r\n                </ul>\r\n                <h2>Inventory</h2>\r\n                <div>\r\n                    <div>\r\n                        <div>Weight: ${game.player.inventory.currentWeight}/${game.player.inventory.weightCap}</div>\r\n                        <div>Volume: ${game.player.inventory.currentVolume}/${game.player.inventory.volumeCap}</div>\r\n                    </div>\r\n                    <div style=\"display: inline-block\">\r\n                        <ul>\r\n                            <li repeat.for=\"item of game.player.inventory.items\">\r\n                                <div click.delegate=\"RemoveItem(item)\">${item.title}</div>\r\n                                <div click.delegate=\"UseItem(item)\">Use</div>\r\n                            </li>\r\n                        </ul>\r\n                    </div>\r\n                </div>\r\n            </div>\r\n            <div style=\"display: inline-block\">\r\n                <ul>\r\n                    <li repeat.for=\"part of game.player.health.parts\" click.delegate=\"RemoveItem(item)\">\r\n                        ${item.title}\r\n                        <div>${part.description}:${part.value}</div>\r\n                    </li>\r\n                </ul>\r\n            </div>\r\n            <div>\r\n                <div class=\"dev-stat\">\r\n                    <span>x: ${game.player.position.x}</span>\r\n                    <span>y: ${game.player.position.y}</span>\r\n                </div>\r\n                <button click.delegate=\"toggleCollision()\" innerhtml.bind=\"game.player.collisionEnabled ? 'Collision On' : 'Collision Off'\">Collision</button>\r\n                <div>\r\n                    <label>seed</label>\r\n                    <input type=\"text\" value.bind=\"game.seed\" />\r\n                    <button click.delegate=\"init()\">Generate</button>\r\n                </div>\r\n            </div>\r\n        </div>\r\n    </div>\r\n\r\n</template>"; });
+define('text!app.html', ['module'], function(module) { module.exports = "<template>\r\n    <canvas id=\"canvas\" ref=\"canvas\" height=\"500\" wdith=\"1000\"> Your browser does not support canvas.</canvas>\r\n    <div id=\"map\" style=\"position: relative; background-color:black;font-family: 'Courier New', Courier, monospace; width: 100%; height: 100%;\">\r\n        <div id=\"ui\">\r\n            <div style=\"display: inline-block;\">\r\n                <h2>Items</h2>\r\n                <ul>\r\n                    <li repeat.for=\"item of game.itemContext.items\" click.delegate=\"AddItem(item)\">\r\n                        ${item.title}\r\n                    </li>\r\n                </ul>\r\n                <h2>Inventory</h2>\r\n                <div>\r\n                    <div>\r\n                        <div>Weight: ${game.player.inventory.currentWeight}/${game.player.inventory.weightCap}</div>\r\n                        <div>Volume: ${game.player.inventory.currentVolume}/${game.player.inventory.volumeCap}</div>\r\n                    </div>\r\n                    <div style=\"display: inline-block\">\r\n                        <ul>\r\n                            <li repeat.for=\"item of game.player.inventory.items\">\r\n                                <div click.delegate=\"RemoveItem(item)\">${item.title}</div>\r\n                                <div click.delegate=\"UseItem(item)\">Use</div>\r\n                            </li>\r\n                        </ul>\r\n                    </div>\r\n                </div>\r\n            </div>\r\n            <div style=\"display: inline-block\">\r\n                <ul>\r\n                    <li repeat.for=\"part of game.player.health.parts\" click.delegate=\"RemoveItem(item)\">\r\n                        ${item.title}\r\n                        <div>${part.description}:${part.value}</div>\r\n                    </li>\r\n                </ul>\r\n            </div>\r\n            <div>\r\n                <div class=\"dev-stat\">\r\n                    <span>x: ${game.player.position.x}</span>\r\n                    <span>y: ${game.player.position.y}</span>\r\n                </div>\r\n                <div class=\"dev-stat\">\r\n                    <span>zoomLevel: ${game.camera.zoomLevel}</span>\r\n                </div>\r\n                <div class=\"dev-stat\">\r\n                    <span>viewport size x: ${game.camera.viewportSize.x}</span>\r\n                    <span>viewport size y: ${game.camera.viewportSize.y}</span>\r\n                </div>\r\n                <button click.delegate=\"toggleCollision()\" innerhtml.bind=\"game.player.collisionEnabled ? 'Collision On' : 'Collision Off'\">Collision</button>\r\n                <div>\r\n                    <label>seed</label>\r\n                    <input type=\"text\" value.bind=\"game.seed\" />\r\n                    <button click.delegate=\"init()\">Generate</button>\r\n                </div>\r\n            </div>\r\n        </div>\r\n    </div>\r\n\r\n</template>"; });
 //# sourceMappingURL=app-bundle.js.map

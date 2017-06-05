@@ -30,12 +30,17 @@ export class Player extends Actor {
 
     }
 
+    use() {
+        //this.glowColor = ""
+    }
+
     equip(item: Item) {
 
     }
     toggleCollision() {
         this.collisionEnabled = !this.collisionEnabled;
     }
+    
     setPlayerPosition(value: Vector2) {
         //this.camera.translate(value);
         this.eventAggregator.publish('PlayerMoved', new PlayerMovedEvent(value))

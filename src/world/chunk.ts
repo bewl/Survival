@@ -84,8 +84,8 @@ export class Chunk {
 
         TileData.tiles.forEach(tile => {
             //We are modifying the weight of the tile to correspond with the weightMod being applied to the perlin noise result.
-            let min: number = tile.weight.min == null ? null : (tile.weight.min * tileData.weightRange) - tileData.weightMod;
-            let max: number = tile.weight.max == null ? null : (tile.weight.max * tileData.weightRange) - tileData.weightMod;
+            let min: number = tile.weight.min == null ? null : (tile.weight.min * TileData.weightRange) - TileData.weightMod;
+            let max: number = tile.weight.max == null ? null : (tile.weight.max * TileData.weightRange) - TileData.weightMod;
             weightMap.push({
                 id: tile.id,
                 random: tile.random,
@@ -139,6 +139,7 @@ export class Chunk {
         let currentLayer = maxLayer;
         //TODO: This could be optimized
         let tileData;
+        let seed = this.perlin.seedValue * parseInt('' + Math.abs(worldPosition.x + worldPosition.y)) + tileWeight * 10000000;
         tileData = weightMap.find(tile => {
             //tileweight falls in tile weight range
             if (((tile.weight.max >= tileWeight) || tile.weight.max == null)
@@ -146,9 +147,9 @@ export class Chunk {
                 //is this tile randomized to show?
                 if (tile.randomPercent != null && tile.randomPercent != 0) {
                     let show = true;
-                    let rnd = new Random((this.perlin.seedValue * parseInt('' + worldPosition.x + worldPosition.y)) + tileWeight * 10000000);
+                    let rnd = new Random(seed);
                     let num = rnd.nextInt(1, 100);
-                    show = num <= tile.randomPercent * 100;
+                    show = num <= Math.abs(tile.randomPercent) * 100;
                     //If we are not going to randomly show the tile then
                     //We need to go down to the NEXT layer, and not the next decrement of the same layer 
                     //(e.g. layer 2.1 is not showing, we need to go to Layer 0.* and not Layer 1.0)

@@ -1,20 +1,16 @@
 import { inject } from 'aurelia-framework';
 import { Item } from './item/item';
-import * as helpers from './helpers'
 import { Game } from './game';
 import { Renderer } from './renderer';
-import { EventAggregator } from 'aurelia-event-aggregator';
 import { RenderEvent } from './events/render-event';
 
-@inject(Game, EventAggregator, Renderer)
+@inject(Game, Renderer)
 export class App {
   public game: Game;
   public renderer: Renderer;
   canvas: HTMLCanvasElement;
 
-  _eventAggregator: EventAggregator;
-  constructor(game: Game, eventAggregator: EventAggregator, renderer: Renderer) {
-    this._eventAggregator = eventAggregator;
+  constructor(game: Game, renderer: Renderer) {
     this.renderer = renderer;
     this.game = game;
   }
@@ -22,6 +18,10 @@ export class App {
   attached() {
     this.renderer.init(this.canvas);
     this.init();
+     window.addEventListener('resize', () => {
+       
+       this.game.camera.updateViewport()
+     }, false);
   }
 
   init() {

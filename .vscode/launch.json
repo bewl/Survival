@@ -1,0 +1,24 @@
+{
+    "version": "0.1.0",
+    "configurations": [
+        {
+            "name": "Attach",
+            "type": "chrome",
+            "request": "attach",
+            "port": 9222,
+            "url": "http://localhost:9000",
+            "sourceMaps": true,
+
+            "webRoot": "http://localhost/index.html"
+        },
+        {
+            "name": "Attach to url with files served from ./out",
+            "type": "chrome",
+            "request": "attach",
+            "port": 9222,
+            "url": "http://localhost:9000",
+            "sourceMaps": true,
+            "webRoot": "http://localhost/app.js"
+        }
+    ]
+}

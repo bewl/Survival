@@ -29,7 +29,8 @@ export class Game {
     init() {
         this.world.generateSeed(GenerateHashCode(this.seed));
         this.world.chunks = [];
-        let position = Vector2.zero();//new Vector2((this.world.chunkSize.x * this.maxWorldSize) / 2, (this.world.chunkSize.y * this.maxWorldSize) / 2);
+        let position = new Vector2(30000, 30000);
+        //Vector2.zero();//new Vector2((this.world.chunkSize.x * this.maxWorldSize) / 2, (this.world.chunkSize.y * this.maxWorldSize) / 2);
         
         this.player.setPlayerPosition(position);
     }

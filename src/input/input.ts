@@ -1,20 +1,26 @@
 import { inject } from 'aurelia-framework';
 import { Player } from '../actor/player';
+import { EventAggregator } from 'aurelia-event-aggregator';
 
-
-@inject(Player)
+@inject(Player, EventAggregator)
 export class Input {
     private player: Player;
+    private eventAggregator: EventAggregator;
     private boundHandler;
+    private mouseWheelHandler;
     private lastPressed = 0;
-    constructor(player) {
+    constructor(player, ea) {
         this.player = player;
         this.boundHandler = this.handleKeyInput.bind(this);
+        this.mouseWheelHandler = this.handleMouseWheel.bind(this);
         window.addEventListener('keypress', this.boundHandler, false);
+        window.addEventListener('mousewheel', this.mouseWheelHandler, false);
+        this.eventAggregator = ea;
     }
 
     deactivate() {
         window.removeEventListener('keypress', this.boundHandler);
+        window.removeEventListener('mousewheel', this.mouseWheelHandler);
     }
 
     movePlayer(direction: string) {
@@ -31,10 +37,19 @@ export class Input {
         }
     }
 
+    handleMouseWheel(event) {
+        var e = event;
+        var delta = Math.max(-1, Math.min(1, (e.wheelDelta || -e.detail)));
+
+        this.eventAggregator.publish('ZoomChanged', delta);
+    }
+
     handleKeyInput(event) {
         let time = new Date().getTime();
+        let delta = 10;
+        let diagDelta = delta * 2;
 
-        if (time > this.lastPressed + 40) {
+        if (time > this.lastPressed + delta) {
             switch (event.code.toUpperCase()) {
                 case "65":
                     break;
@@ -43,14 +58,19 @@ export class Input {
                 case "KEYC":
                     this.player.collisionEnabled = !this.player.collisionEnabled;
                     break;
+                case "KEYE":
+                    this.player.use();
+                    break;
                 case "NUMPAD1":
                     this.movePlayer('sw');
+                    time += diagDelta;
                     break;
                 case "NUMPAD2":
                     this.movePlayer('s');
                     break;
                 case "NUMPAD3":
                     this.movePlayer('se');
+                    time += diagDelta;
                     break;
                 case "NUMPAD4":
                     this.movePlayer('w');
@@ -60,12 +80,14 @@ export class Input {
                     break;
                 case "NUMPAD7":
                     this.movePlayer('nw');
+                    time += diagDelta;
                     break;
                 case "NUMPAD8":
                     this.movePlayer('n');
                     break;
                 case "NUMPAD9":
                     this.movePlayer('ne');
+                    time += diagDelta;
                     break;
             }
 

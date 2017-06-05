@@ -5,12 +5,10 @@ import { Tile } from '../tile/tile';
 import { Perlin, Random, Vector2, Bounds, KeyValuePair } from '../helpers';
 
 export class World {
-    //public chunks: Chunk[][];
     public chunks: Chunk[];
     public activeChunks: Chunk[][]; //the chunks including and surrounding the camera viewport
     public activeTiles: Tile[][];
     public activeChunkSize: number; //the amount of active chunks in a given direction
-    public worldSize: Vector2;
     public chunkSize: Vector2;
     public seed: number;
     public viewPortAspectRatio: number;
@@ -21,10 +19,8 @@ export class World {
 
     constructor() {
         this.viewportScale = 7;
-        this.viewPortAspectRatio = 2.02;
         this.perlin = Container.instance.get(Perlin) as Perlin;
-        this.worldSize = new Vector2(2, 1);
-        this.chunkSize = new Vector2(100, 100);//new Vector2(this.viewportScale * (Math.floor(9 * this.viewPortAspectRatio)), Math.floor(this.viewportScale * 9)); //TODO: put this in a setting so other modules can access it
+        this.chunkSize = new Vector2(100, 100);
         this.chunks = [];
         this.seed = new Random(Math.floor(Math.random() * 32000)).nextDouble();
         this.playerTile = null;
@@ -75,21 +71,17 @@ export class World {
     getChunkPositionFromWorldPosition(position: Vector2): Vector2 {
         let chunk = new Vector2();
 
-        chunk.x = Math.ceil(position.x / this.chunkSize.x); //Cheers to Tylar
-        chunk.y = Math.ceil(position.y / this.chunkSize.y);
+        chunk.x = Math.floor(position.x / this.chunkSize.x);
+        chunk.y = Math.floor(position.y / this.chunkSize.y);
 
         return chunk;
     }
 
     getTileByWorldPosition(position: Vector2, chunkSize?: Vector2) {
         let chunkPos = this.getChunkPositionFromWorldPosition(position);
-        let chunk = this.getChunk(chunkPos);// this.chunks[chunkPos.y][chunkPos.x];
+        let chunk = this.getChunk(chunkPos);
 
-        let size = chunkSize || this.chunkSize;
-        let targetTileX = Math.floor(position.x % size.x);
-        let targetTileY = Math.floor(position.y % size.y);
-
-        let targetTile = chunk.tiles[targetTileY][targetTileX];
+        let targetTile = chunk.getTileByWorldPosition(position);
 
         return targetTile;
     }

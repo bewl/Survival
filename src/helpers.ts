@@ -60,6 +60,10 @@ export class Vector2 {
     static zero() {
         return new Vector2(0, 0);
     }
+
+    equals(vector2: Vector2) {
+        return this.y === vector2.y && this.x == vector2.x;
+    }
 }
 
 export class Vector3 {
