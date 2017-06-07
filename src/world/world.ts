@@ -20,7 +20,7 @@ export class World {
     constructor() {
         this.viewportScale = 7;
         this.perlin = Container.instance.get(Perlin) as Perlin;
-        this.chunkSize = new Vector2(100, 100);
+        this.chunkSize = new Vector2(64, 64);
         this.chunks = [];
         this.seed = new Random(Math.floor(Math.random() * 32000)).nextDouble();
         this.playerTile = null;

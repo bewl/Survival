@@ -6,6 +6,13 @@ export class Bandage extends ItemModule {
     }
 
     use() {
-        this.player.health.heal('head', 3);
+        if(this.player.health.value('head') + 3 <= this.player.health.maxHealth )
+
+        {
+            this.player.health.heal('head', 3);
+            return true;
+        }
+
+        return false;
     }
 }

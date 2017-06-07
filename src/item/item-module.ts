@@ -11,7 +11,7 @@ export class ItemModule {
         //this.player.inventory.
     }
 
-    use() {
+    use(): boolean {
         return null;
     }
 

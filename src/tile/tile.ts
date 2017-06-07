@@ -12,6 +12,7 @@ export class Tile {
     public chunkIndex: Vector2;
     public isPlayer: boolean;
     public tileWeight: number;
+    public image: string;
 
     constructor(chunkPosition: Vector2, worldPosition: Vector2, tileWeight: number, chunkIndex: Vector2) {
         this.worldPosition = worldPosition;

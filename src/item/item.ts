@@ -2,8 +2,8 @@ import { ItemModule } from './item-module';
 import { Aurelia, inject } from 'aurelia-framework';
 import { Container } from 'aurelia-dependency-injection';
 import { Player } from '../actor/player';
-import { ItemStats} from './stats/item-stats';
-import { WeaponStats} from './stats/weapon-stats';
+import { ItemStats } from './stats/item-stats';
+import { WeaponStats } from './stats/weapon-stats';
 
 export class Item {
     id: string;
@@ -11,8 +11,8 @@ export class Item {
     description: string;
     category: string;
     module: string;
-    stats:ItemStats;
-    weaponStats : WeaponStats;
+    stats: ItemStats;
+    weaponStats: WeaponStats;
     container: Container;
 
 
@@ -34,8 +34,14 @@ export class Item {
         item.description = data.description;
         item.module = data.module;
         item.title = data.title;
-        
+
         return item;
+    }
+
+    static clone(item: Item): Item {
+        let newItem = Object.create(item);
+        newItem.stats = Object.create(item.stats);
+        return newItem;
     }
 
     static mapItemStats(data) {
@@ -62,10 +68,8 @@ export class Item {
 
     use() {
         let mod = this.container.get(this.module) as ItemModule;
-        mod.use();
-
-        //handle if there are charges on this item or not
-        if (this.stats.charges !== -1) {
+        if (mod.use()) {
+            //handle if there are charges on this item or not
             if (this.stats.charges > 0) {
                 if (this.stats.charges === 1) {
                     let player = this.container.get(Player) as Player;

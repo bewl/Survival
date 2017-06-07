@@ -16,10 +16,11 @@ let tileData = {
         },
         {
             id: "tree",
-            weight: { min: WATER_MAX + .003, max: 0.60 },
-            random: true,
-            randomPercent: 0.30,
+            weight: { min: WATER_MAX + .003, max: 0.35 },
+            random: false,
+            randomPercent: 0,
             symbol: 165,
+            //image: 'tree.png',
             color: '#228B22',
             movementCost: -1,
             layer: 1

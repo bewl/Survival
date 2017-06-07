@@ -8,19 +8,23 @@ export class Input {
     private eventAggregator: EventAggregator;
     private boundHandler;
     private mouseWheelHandler;
+    private mouseMoveHandler;
     private lastPressed = 0;
     constructor(player, ea) {
         this.player = player;
+        this.mouseMoveHandler = this.handleMouseMove.bind(this);
         this.boundHandler = this.handleKeyInput.bind(this);
         this.mouseWheelHandler = this.handleMouseWheel.bind(this);
         window.addEventListener('keypress', this.boundHandler, false);
         window.addEventListener('mousewheel', this.mouseWheelHandler, false);
+        window.addEventListener('mousemove', this.mouseMoveHandler, false);
         this.eventAggregator = ea;
     }
 
     deactivate() {
         window.removeEventListener('keypress', this.boundHandler);
         window.removeEventListener('mousewheel', this.mouseWheelHandler);
+        window.removeEventListener('mousemove', this.mouseMoveHandler);
     }
 
     movePlayer(direction: string) {
@@ -42,6 +46,10 @@ export class Input {
         var delta = Math.max(-1, Math.min(1, (e.wheelDelta || -e.detail)));
 
         this.eventAggregator.publish('ZoomChanged', delta);
+    }
+
+    handleMouseMove(event) {
+        this.eventAggregator.publish('MouseMoved', event);
     }
 
     handleKeyInput(event) {

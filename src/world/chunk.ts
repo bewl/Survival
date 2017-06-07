@@ -130,7 +130,7 @@ export class Chunk {
     }
 
     generateTile(worldPosition: Vector2, chunkPosition: Vector2, weightMap: any[], chunkIndex: Vector2): Tile {
-        let perlinDivisor = 40;
+        let perlinDivisor = 100;
 
         let tileWeight = Math.ceil(this.perlin.simplex2(worldPosition.x / perlinDivisor, worldPosition.y / perlinDivisor) * TileData.weightMod);
         let tileType = null;
@@ -139,7 +139,7 @@ export class Chunk {
         let currentLayer = maxLayer;
         //TODO: This could be optimized
         let tileData;
-        let seed = this.perlin.seedValue * parseInt('' + Math.abs(worldPosition.x + worldPosition.y)) + tileWeight * 10000000;
+        let seed = this.perlin.seedValue * parseInt('' + Math.abs(worldPosition.x % 324 + worldPosition.y  % 32422)) + tileWeight * 10000000;
         tileData = weightMap.find(tile => {
             //tileweight falls in tile weight range
             if (((tile.weight.max >= tileWeight) || tile.weight.max == null)
@@ -167,6 +167,7 @@ export class Chunk {
 
         tile.movementCost = tileType.movementCost;
         tile.title = tileType.title;
+        tile.image = tileType.image;
 
         if (!tile.color)
             tile.color = tileType.color;

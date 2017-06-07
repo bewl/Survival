@@ -10,7 +10,7 @@ export class Health {
     rightLeg: number = 100;
     leftFoot: number = 100;
     rightFoot: number = 100;
-
+    maxHealth: number = 100;
     constructor() {
         this.parts = [
             {id: 'head', description: 'Head', value: 100},
@@ -33,6 +33,11 @@ export class Health {
 
         part.value -= value;
         //apply value (create rules as well)
+    }
+
+    value(partId:string) {
+        let part = this.parts.find(p => p.id === partId);
+        return part.value;
     }
 
     heal(partId:string, value:number) {

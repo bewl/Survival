@@ -44,7 +44,7 @@ export class Inventory {
         this.currentVolume += item.stats.volume;
         this.currentWeight += item.stats.weight;
         //let mod = require('./item-modules/' + item.module);
-        let i = Object.assign(new Item(), item);
+        let i = Item.clone(item);
         i.id = Guid.newGuid();
         this.items.push(i);
         //update volumeCurrent

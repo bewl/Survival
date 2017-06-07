@@ -431,7 +431,7 @@ define('inventory/inventory',["require", "exports", "../item/item", "../helpers"
         Inventory.prototype.addItem = function (item) {
             this.currentVolume += item.stats.volume;
             this.currentWeight += item.stats.weight;
-            var i = Object.assign(new item_1.Item(), item);
+            var i = item_1.Item.clone(item);
             i.id = helpers_1.Guid.newGuid();
             this.items.push(i);
         };
@@ -459,6 +459,7 @@ define('actor/health',["require", "exports"], function (require, exports) {
             this.rightLeg = 100;
             this.leftFoot = 100;
             this.rightFoot = 100;
+            this.maxHealth = 100;
             this.parts = [
                 { id: 'head', description: 'Head', value: 100 },
                 { id: 'torso', description: 'Torso', value: 100 },
@@ -475,6 +476,10 @@ define('actor/health',["require", "exports"], function (require, exports) {
         Health.prototype.damage = function (partId, value) {
             var part = this.parts.find(function (p) { return p.id === partId; });
             part.value -= value;
+        };
+        Health.prototype.value = function (partId) {
+            var part = this.parts.find(function (p) { return p.id === partId; });
+            return part.value;
         };
         Health.prototype.heal = function (partId, value) {
             var part = this.parts.find(function (p) { return p.id === partId; });
@@ -521,9 +526,9 @@ define('tile/data/tiles',["require", "exports"], function (require, exports) {
             },
             {
                 id: "tree",
-                weight: { min: WATER_MAX + .003, max: 0.60 },
-                random: true,
-                randomPercent: 0.30,
+                weight: { min: WATER_MAX + .003, max: 0.35 },
+                random: false,
+                randomPercent: 0,
                 symbol: 165,
                 color: '#228B22',
                 movementCost: -1,
@@ -654,13 +659,13 @@ define('world/chunk',["require", "exports", "aurelia-framework", "../tile/tile",
             return targetTile;
         };
         Chunk.prototype.generateTile = function (worldPosition, chunkPosition, weightMap, chunkIndex) {
-            var perlinDivisor = 40;
+            var perlinDivisor = 100;
             var tileWeight = Math.ceil(this.perlin.simplex2(worldPosition.x / perlinDivisor, worldPosition.y / perlinDivisor) * TileData.weightMod);
             var tileType = null;
             var maxLayer = 1000;
             var currentLayer = maxLayer;
             var tileData;
-            var seed = this.perlin.seedValue * parseInt('' + Math.abs(worldPosition.x + worldPosition.y)) + tileWeight * 10000000;
+            var seed = this.perlin.seedValue * parseInt('' + Math.abs(worldPosition.x % 324 + worldPosition.y % 32422)) + tileWeight * 10000000;
             tileData = weightMap.find(function (tile) {
                 if (((tile.weight.max >= tileWeight) || tile.weight.max == null)
                     && ((tile.weight.min <= tileWeight) || tile.weight.min == null)) {
@@ -679,6 +684,7 @@ define('world/chunk',["require", "exports", "aurelia-framework", "../tile/tile",
             var tile = new tile_1.Tile(chunkPosition, new helpers_1.Vector2(worldPosition.x, worldPosition.y), tileWeight, chunkIndex);
             tile.movementCost = tileType.movementCost;
             tile.title = tileType.title;
+            tile.image = tileType.image;
             if (!tile.color)
                 tile.color = tileType.color;
             if (!tile.symbol)
@@ -696,7 +702,7 @@ define('world/world',["require", "exports", "aurelia-framework", "./chunk", "../
         function World() {
             this.viewportScale = 7;
             this.perlin = aurelia_framework_1.Container.instance.get(helpers_1.Perlin);
-            this.chunkSize = new helpers_1.Vector2(100, 100);
+            this.chunkSize = new helpers_1.Vector2(64, 64);
             this.chunks = [];
             this.seed = new helpers_1.Random(Math.floor(Math.random() * 32000)).nextDouble();
             this.playerTile = null;
@@ -837,6 +843,8 @@ define('actor/player',["require", "exports", "aurelia-framework", "../helpers", 
         };
         Player.prototype.use = function () {
         };
+        Player.prototype.checkVicinity = function () {
+        };
         Player.prototype.equip = function (item) {
         };
         Player.prototype.toggleCollision = function () {
@@ -953,6 +961,11 @@ define('item/item',["require", "exports", "aurelia-dependency-injection", "../ac
             item.title = data.title;
             return item;
         };
+        Item.clone = function (item) {
+            var newItem = Object.create(item);
+            newItem.stats = Object.create(item.stats);
+            return newItem;
+        };
         Item.mapItemStats = function (data) {
             var stats = new item_stats_1.ItemStats();
             stats.charges = data.charges;
@@ -973,8 +986,7 @@ define('item/item',["require", "exports", "aurelia-dependency-injection", "../ac
         };
         Item.prototype.use = function () {
             var mod = this.container.get(this.module);
-            mod.use();
-            if (this.stats.charges !== -1) {
+            if (mod.use()) {
                 if (this.stats.charges > 0) {
                     if (this.stats.charges === 1) {
                         var player = this.container.get(player_1.Player);
@@ -1094,15 +1106,18 @@ define('input/input',["require", "exports", "aurelia-framework", "../actor/playe
         function Input(player, ea) {
             this.lastPressed = 0;
             this.player = player;
+            this.mouseMoveHandler = this.handleMouseMove.bind(this);
             this.boundHandler = this.handleKeyInput.bind(this);
             this.mouseWheelHandler = this.handleMouseWheel.bind(this);
             window.addEventListener('keypress', this.boundHandler, false);
             window.addEventListener('mousewheel', this.mouseWheelHandler, false);
+            window.addEventListener('mousemove', this.mouseMoveHandler, false);
             this.eventAggregator = ea;
         }
         Input.prototype.deactivate = function () {
             window.removeEventListener('keypress', this.boundHandler);
             window.removeEventListener('mousewheel', this.mouseWheelHandler);
+            window.removeEventListener('mousemove', this.mouseMoveHandler);
         };
         Input.prototype.movePlayer = function (direction) {
             this.player.move(direction, 1);
@@ -1120,6 +1135,9 @@ define('input/input',["require", "exports", "aurelia-framework", "../actor/playe
             var e = event;
             var delta = Math.max(-1, Math.min(1, (e.wheelDelta || -e.detail)));
             this.eventAggregator.publish('ZoomChanged', delta);
+        };
+        Input.prototype.handleMouseMove = function (event) {
+            this.eventAggregator.publish('MouseMoved', event);
         };
         Input.prototype.handleKeyInput = function (event) {
             var time = new Date().getTime();
@@ -1350,7 +1368,7 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
-define('renderer',["require", "exports", "aurelia-event-aggregator", "aurelia-framework", "./game"], function (require, exports, aurelia_event_aggregator_1, aurelia_framework_1, game_1) {
+define('renderer',["require", "exports", "aurelia-event-aggregator", "aurelia-framework", "./game", "./helpers"], function (require, exports, aurelia_event_aggregator_1, aurelia_framework_1, game_1, helpers_1) {
     "use strict";
     var Renderer = (function () {
         function Renderer(ea, game) {
@@ -1360,6 +1378,7 @@ define('renderer',["require", "exports", "aurelia-event-aggregator", "aurelia-fr
             this._eventAggregator.subscribe('RenderEvent', function (event) {
                 _this.draw(event);
             });
+            this.imageRepo = new ImageRepo();
         }
         Renderer.prototype.init = function (canvas) {
             this.canvas = canvas;
@@ -1373,8 +1392,26 @@ define('renderer',["require", "exports", "aurelia-event-aggregator", "aurelia-fr
             for (var y = 0; y < event.symbols.length; y++) {
                 var row = event.symbols[y];
                 for (var x = 0; x < row.length; x++) {
-                    this.ctx.fillStyle = event.symbols[y][x].isPlayer ? "blue" : event.symbols[y][x].color;
-                    this.ctx.fillRect(x * cellSizeX, y * cellSizeY, cellSizeX, cellSizeY);
+                    var currentTile = event.symbols[y][x];
+                    var currentPos = new helpers_1.Vector2(x * cellSizeX, y * cellSizeY);
+                    this.ctx.fillStyle = currentTile.isPlayer ? "blue" : currentTile.color;
+                    this.ctx.fillRect(currentPos.x, currentPos.y, cellSizeX, cellSizeY);
+                    if (currentTile.image != null) {
+                        var img = this.imageRepo.getImage('/images/' + currentTile.image);
+                        this.ctx.drawImage(img, currentPos.x, currentPos.y, cellSizeX, cellSizeY);
+                    }
+                    if (currentTile.chunkIndex.y == 0) {
+                        this.ctx.moveTo(currentPos.x, currentPos.y);
+                        this.ctx.lineTo(currentPos.x + cellSizeX, currentPos.y);
+                        this.ctx.strokeStyle = "grey";
+                        this.ctx.stroke();
+                    }
+                    if (currentTile.chunkIndex.x == 0) {
+                        this.ctx.moveTo(currentPos.x, currentPos.y);
+                        this.ctx.lineTo(currentPos.x, currentPos.y + cellSizeY);
+                        this.ctx.strokeStyle = "grey";
+                        this.ctx.stroke();
+                    }
                 }
             }
         };
@@ -1385,6 +1422,22 @@ define('renderer',["require", "exports", "aurelia-event-aggregator", "aurelia-fr
         __metadata("design:paramtypes", [aurelia_event_aggregator_1.EventAggregator, game_1.Game])
     ], Renderer);
     exports.Renderer = Renderer;
+    var ImageRepo = (function () {
+        function ImageRepo() {
+            this.images = [];
+        }
+        ImageRepo.prototype.getImage = function (imagePath) {
+            var image = this.images.find(function (a) { return a.path == imagePath; });
+            if (image == null) {
+                var img = new Image();
+                img.src = imagePath;
+                image = { path: imagePath, image: img };
+                this.images.push(image);
+            }
+            return image.image;
+        };
+        return ImageRepo;
+    }());
 });
 
 var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
@@ -1542,7 +1595,11 @@ define('item/modules/bandage',["require", "exports", "../item-module"], function
             return _super.call(this) || this;
         }
         Bandage.prototype.use = function () {
-            this.player.health.heal('head', 3);
+            if (this.player.health.value('head') + 3 <= this.player.health.maxHealth) {
+                this.player.health.heal('head', 3);
+                return true;
+            }
+            return false;
         };
         return Bandage;
     }(item_module_1.ItemModule));
@@ -1628,6 +1685,118 @@ define('resources/index',["require", "exports"], function (require, exports) {
     function configure(config) {
     }
     exports.configure = configure;
+});
+
+define(["require", "exports"], function (require, exports) {
+    "use strict";
+    var Random = (function () {
+        function Random() {
+        }
+        return Random;
+    }());
+    exports.Random = Random;
+    (function (global, pool, math, width, chunks, digits, module, define, rngname) {
+        var startdenom = math.pow(width, chunks), significance = math.pow(2, digits), overflow = significance * 2, mask = width - 1, nodecrypto;
+        var impl = math['seed' + rngname] = function (seed, options, callback) {
+            var key = [];
+            options = (options == true) ? { entropy: true } : (options || {});
+            var shortseed = mixkey(flatten(options.entropy ? [seed, tostring(pool)] :
+                (seed == null) ? autoseed() : seed, 3), key);
+            var arc4 = new ARC4(key);
+            mixkey(tostring(arc4.S), pool);
+            return (options.pass || callback ||
+                function (prng, seed, is_math_call) {
+                    if (is_math_call) {
+                        math[rngname] = prng;
+                        return seed;
+                    }
+                    else
+                        return prng;
+                })(function () {
+                var n = arc4.g(chunks), d = startdenom, x = 0;
+                while (n < significance) {
+                    n = (n + x) * width;
+                    d *= width;
+                    x = arc4.g(1);
+                }
+                while (n >= overflow) {
+                    n /= 2;
+                    d /= 2;
+                    x >>>= 1;
+                }
+                return (n + x) / d;
+            }, shortseed, 'global' in options ? options.global : (this == math));
+        };
+        function ARC4(key) {
+            var t, keylen = key.length, me = this, i = 0, j = me.i = me.j = 0, s = me.S = [];
+            if (!keylen) {
+                key = [keylen++];
+            }
+            while (i < width) {
+                s[i] = i++;
+            }
+            for (i = 0; i < width; i++) {
+                s[i] = s[j = mask & (j + key[i % keylen] + (t = s[i]))];
+                s[j] = t;
+            }
+            (me.g = function (count) {
+                var t, r = 0, i = me.i, j = me.j, s = me.S;
+                while (count--) {
+                    t = s[i = mask & (i + 1)];
+                    r = r * width + s[mask & ((s[i] = s[j = mask & (j + t)]) + (s[j] = t))];
+                }
+                me.i = i;
+                me.j = j;
+                return r;
+            })(width);
+        }
+        function flatten(obj, depth) {
+            var result = [], typ = (typeof obj), prop;
+            if (depth && typ == 'object') {
+                for (prop in obj) {
+                    try {
+                        result.push(flatten(obj[prop], depth - 1));
+                    }
+                    catch (e) { }
+                }
+            }
+            return (result.length ? result : typ == 'string' ? obj : obj + '\0');
+        }
+        function mixkey(seed, key) {
+            var stringseed = seed + '', smear, j = 0;
+            while (j < stringseed.length) {
+                key[mask & j] =
+                    mask & ((smear ^= key[mask & j] * 19) + stringseed.charCodeAt(j++));
+            }
+            return tostring(key);
+        }
+        function autoseed(seed) {
+            try {
+                if (nodecrypto)
+                    return tostring(nodecrypto.randomBytes(width));
+                global.crypto.getRandomValues(seed = new Uint8Array(width));
+                return tostring(seed);
+            }
+            catch (e) {
+                return [+new Date, global, (seed = global.navigator) && seed.plugins,
+                    global.screen, tostring(pool)];
+            }
+        }
+        function tostring(a) {
+            return String.fromCharCode.apply(0, a);
+        }
+        mixkey(math[rngname](), pool);
+        if (module && module.exports) {
+            module.exports = impl;
+            try {
+                nodecrypto = require('crypto');
+            }
+            catch (ex) { }
+        }
+        else if (define && define.amd) {
+            define(function () { return impl; });
+        }
+    })(this, [], Math, 256, 6, 52, (typeof module) == 'object' && module, (typeof define) == 'function' && define, 'random');
 });
 
 define('utility/vector',["require", "exports"], function (require, exports) {

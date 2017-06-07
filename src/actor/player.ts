@@ -34,6 +34,10 @@ export class Player extends Actor {
         //this.glowColor = ""
     }
 
+    checkVicinity() {
+        
+    }
+
     equip(item: Item) {
 
     }
