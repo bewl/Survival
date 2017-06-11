@@ -97,16 +97,13 @@ export class World {
         }
         return chunk;
     }
-
-    getViewport(viewportSize: Vector2, playerPosition: Vector2): Tile[][] {
-        let playerPos = playerPosition || this.playerPositionCache;
-        //needs heavy optimization here
-        //get top left and bottom right bounds in world positions
-        let startTilePos: Vector2 = new Vector2(playerPos.x - Math.floor(viewportSize.x / 2), playerPos.y - Math.floor(viewportSize.y / 2));
+    getViewport(viewportSize: Vector2, center: Vector2 ) : Tile[][]  {
+        let startTilePos: Vector2 = new Vector2(center.x - Math.floor(viewportSize.x / 2), center.y - Math.floor(viewportSize.y / 2));
         let endTilePos: Vector2 = new Vector2(startTilePos.x + viewportSize.x, startTilePos.y + viewportSize.y);
 
         let topLeftChunkPos = this.getChunkPositionFromWorldPosition(startTilePos);
         let bottomRightChunkPos = this.getChunkPositionFromWorldPosition(endTilePos);
+
 
         let viewportBuffer: Tile[][] = [];
         //getting the intersecting chunks
@@ -130,17 +127,10 @@ export class World {
                 }
             }
         }
-
-        if (this.playerTileCache)
-                this.playerTileCache.isPlayer = false;
-        
-        this.playerTileCache = viewportBuffer[Math.floor(viewportBuffer.length / 2)][Math.floor(viewportSize.x / 2)];
-
-
-        let playerTile = viewportBuffer[Math.floor(viewportSize.y / 2)][Math.floor(viewportSize.x / 2)];
-        playerTile.isPlayer = true;
-
-        this.playerPositionCache = playerTile.worldPosition;
+        return viewportBuffer;
+    }
+    setViewport(viewportSize: Vector2, playerPosition: Vector2): Tile[][] {
+        let viewportBuffer: Tile[][] = this.getViewport(viewportSize, playerPosition);
 
         return viewportBuffer;
     }

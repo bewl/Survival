@@ -54,7 +54,7 @@ export class Input {
 
     handleKeyInput(event) {
         let time = new Date().getTime();
-        let delta = 10;
+        let delta = 55;
         let diagDelta = delta * 2;
 
         if (time > this.lastPressed + delta) {

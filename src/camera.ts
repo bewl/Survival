@@ -4,12 +4,12 @@ import { Vector2, Bounds } from './helpers';
 import { World } from './world/world';
 import { Chunk } from './world/chunk';
 import { Tile } from './tile/tile';
-
+import { UI } from './ui/ui';
 import { EventAggregator } from 'aurelia-event-aggregator';
 import { RenderEvent } from './events/render-event';
 import { PlayerMovedEvent } from './events/player-moved-event';
 
-@inject(World, EventAggregator, Player)
+@inject(World, EventAggregator, Player, UI)
 export class Camera {
     _eventAggregator: EventAggregator;
 
@@ -25,10 +25,11 @@ export class Camera {
     //viewport: Chunk;
     player: Player;
     viewport: Tile[][];
+    ui: UI;
 
-
-    constructor(world, eventAggregator, player) {
+    constructor(world, eventAggregator, player, ui) {
         this._eventAggregator = eventAggregator;
+        this.ui = ui;
         this.position = null;
         this.world = world;
         this.zoomLevel = 7;
@@ -37,7 +38,8 @@ export class Camera {
         this.viewport = null;
         this.player = player;
         this._eventAggregator.subscribe('PlayerMoved', (event: PlayerMovedEvent) => {
-            this.translate(event.position)
+            this.ui.deselectTiles();
+            this.translate(event.position);
         });
 
         this._eventAggregator.subscribe('Update', (playerPos?: Vector2) => {
@@ -48,10 +50,10 @@ export class Camera {
 
         this._eventAggregator.subscribe('ZoomChanged', (dir: number) => {
             let minSize = 16;
-            let maxSize = 256;
+            let maxSize = 64;
             if (dir == 1) {
                 var x = Math.pow(2, this.zoomLevel - 1) / 2;
-                if (x > minSize) {
+                if (x >= minSize) {
                     this.viewportSize.x = x;
                     this.viewportSize.y = x / 2;
 
@@ -61,7 +63,7 @@ export class Camera {
             }
             else if (dir == -1) {
                 var x = Math.pow(2, this.zoomLevel + 1) / 2;
-                if (x < maxSize) {
+                if (x <= maxSize) {
                     this.viewportSize.x = x;
                     this.viewportSize.y = x / 2;
 

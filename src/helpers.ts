@@ -64,6 +64,10 @@ export class Vector2 {
     equals(vector2: Vector2) {
         return this.y === vector2.y && this.x == vector2.x;
     }
+
+    add(amt: number) {
+        return new Vector2(this.x + amt, this.y + amt);
+    }
 }
 
 export class Vector3 {
