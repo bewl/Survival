@@ -129,9 +129,4 @@ export class World {
         }
         return viewportBuffer;
     }
-    setViewport(viewportSize: Vector2, playerPosition: Vector2): Tile[][] {
-        let viewportBuffer: Tile[][] = this.getViewport(viewportSize, playerPosition);
-
-        return viewportBuffer;
-    }
 }

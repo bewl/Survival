@@ -791,10 +791,6 @@ define('world/world',["require", "exports", "aurelia-framework", "./chunk", "../
             }
             return viewportBuffer;
         };
-        World.prototype.setViewport = function (viewportSize, playerPosition) {
-            var viewportBuffer = this.getViewport(viewportSize, playerPosition);
-            return viewportBuffer;
-        };
         return World;
     }());
     exports.World = World;
