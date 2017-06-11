@@ -6,8 +6,10 @@ import { Vector2 } from './helpers';
 import { Input } from './input/input';
 import { Camera} from './camera';
 import { GenerateHashCode } from './helpers'
+import {EventAggregator} from 'aurelia-event-aggregator';
+import {UI} from './ui/ui';
 
-@inject(Player, World, ItemContext, Input, Camera)
+@inject(Player, World, ItemContext, Input, Camera, EventAggregator, UI)
 export class Game {
     player: Player = null;
     itemContext: ItemContext = null;
@@ -16,7 +18,12 @@ export class Game {
     seed: string = "Test seed";
     maxWorldSize: number;
     camera: Camera;
-    constructor(player: Player, world: World, itemContext: ItemContext, input: Input, camera: Camera) {
+    isUIActive: boolean;
+    eventAggregator: EventAggregator;
+    ui: UI;
+
+
+    constructor(player: Player, world: World, itemContext: ItemContext, input: Input, camera: Camera, ea: EventAggregator, ui: UI) {
 
         this.itemContext = itemContext;
         this.player = player;
@@ -24,6 +31,9 @@ export class Game {
         this.input = input;
         this.maxWorldSize = 200;
         this.camera = camera;
+        this.isUIActive = false;
+        this.eventAggregator = ea;
+        this.ui = ui;
     }
 
     init() {
@@ -33,6 +43,18 @@ export class Game {
         //Vector2.zero();//new Vector2((this.world.chunkSize.x * this.maxWorldSize) / 2, (this.world.chunkSize.y * this.maxWorldSize) / 2);
         
         this.player.setPlayerPosition(position);
+
+        this.eventAggregator.subscribe("MouseMoved", (event) => {
+            let x = event.clientX;
+            let y = event.clientY;
+
+            let tileX = Math.floor(x / this.camera.viewportSize.x);
+            let tileY = Math.floor(y / this.camera.viewportSize.y);
+
+            let tile = this.camera.viewport[tileY][tileX];
+            
+            this.eventAggregator.publish("TileInfo", tile);
+        });
     }
 
 }

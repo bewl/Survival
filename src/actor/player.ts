@@ -47,8 +47,8 @@ export class Player extends Actor {
     
     setPlayerPosition(value: Vector2) {
         //this.camera.translate(value);
-        this.eventAggregator.publish('PlayerMoved', new PlayerMovedEvent(value))
         this.position = value;
+        this.eventAggregator.publish('PlayerMoved', new PlayerMovedEvent(value))
     }
 
     move(direction: string, distance: number) {

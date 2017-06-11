@@ -9,6 +9,7 @@ export class App {
   public game: Game;
   public renderer: Renderer;
   canvas: HTMLCanvasElement;
+public ui: HTMLElement;
 
   constructor(game: Game, renderer: Renderer) {
     this.renderer = renderer;
@@ -22,6 +23,9 @@ export class App {
        
        this.game.camera.updateViewport()
      }, false);
+
+     this.ui.addEventListener('mouseenter', () => { this.game.isUIActive = true; });
+     this.ui.addEventListener('mouseleave', () => { this.game.isUIActive = false; });
   }
 
   init() {

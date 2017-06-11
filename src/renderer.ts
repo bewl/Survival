@@ -29,39 +29,46 @@ export class Renderer {
     };
 
     public draw(event: RenderEvent) {
-        
-        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-        let cellSizeX = Math.ceil(this.canvas.width / event.viewportSize.x);
-        let cellSizeY = Math.ceil(this.canvas.height / event.viewportSize.y);
+        let offscreen = document.createElement('canvas');
+        offscreen.width = this.canvas.width;
+        offscreen.height = this.canvas.height;
+        let offscreenCtx = offscreen.getContext('2d');
+
+        offscreenCtx.clearRect(0, 0, offscreen.width, offscreen.height);
+        let cellSizeX = Math.ceil(offscreen.width / event.viewportSize.x);
+        let cellSizeY = Math.ceil(offscreen.height / event.viewportSize.y);
 
         for (let y: number = 0; y < event.symbols.length; y++) {
             let row = event.symbols[y];
             for (let x: number = 0; x < row.length; x++) {
                 let currentTile = event.symbols[y][x];
                 let currentPos = new Vector2(x * cellSizeX, y * cellSizeY)
-                this.ctx.fillStyle = currentTile.isPlayer ? "blue" : currentTile.color;
-                this.ctx.fillRect(currentPos.x, currentPos.y, cellSizeX, cellSizeY);
+                offscreenCtx.fillStyle = currentTile.isPlayer ? "blue" : currentTile.color;
+                offscreenCtx.fillRect(currentPos.x, currentPos.y, cellSizeX, cellSizeY);
 
                 if(currentTile.image != null) {
                     let img = this.imageRepo.getImage('/images/' + currentTile.image);
-                    this.ctx.drawImage(img, currentPos.x, currentPos.y, cellSizeX, cellSizeY);
+                    offscreenCtx.drawImage(img, currentPos.x, currentPos.y, cellSizeX, cellSizeY);
                 }
 
                 if(currentTile.chunkIndex.y == 0) {
-                    this.ctx.moveTo(currentPos.x, currentPos.y);
-                    this.ctx.lineTo(currentPos.x + cellSizeX, currentPos.y)
-                    this.ctx.strokeStyle = "grey";
-                    this.ctx.stroke();
+                    offscreenCtx.moveTo(currentPos.x, currentPos.y);
+                    offscreenCtx.lineTo(currentPos.x + cellSizeX, currentPos.y)
+                    offscreenCtx.strokeStyle = "grey";
+                    offscreenCtx.stroke();
                 }
 
                 if(currentTile.chunkIndex.x == 0) {
-                    this.ctx.moveTo(currentPos.x, currentPos.y);
-                    this.ctx.lineTo(currentPos.x, currentPos.y + cellSizeY)
-                    this.ctx.strokeStyle = "grey";
-                    this.ctx.stroke();
+                    offscreenCtx.moveTo(currentPos.x, currentPos.y);
+                    offscreenCtx.lineTo(currentPos.x, currentPos.y + cellSizeY)
+                    offscreenCtx.strokeStyle = "grey";
+                    offscreenCtx.stroke();
                 }
             }
         }
+        
+        this.ctx.drawImage(offscreen, 0, 0)
+        
     }
 
 }

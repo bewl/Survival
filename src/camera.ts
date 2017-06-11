@@ -41,7 +41,7 @@ export class Camera {
         });
 
         this._eventAggregator.subscribe('Update', (playerPos?: Vector2) => {
-            this.updateViewport(playerPos);
+            this.updateViewport();
         });
 
        
@@ -56,7 +56,7 @@ export class Camera {
                     this.viewportSize.y = x / 2;
 
                     this.zoomLevel--;
-                    this.updateViewport(this.player.position);
+                    this.updateViewport();
                 }
             }
             else if (dir == -1) {
@@ -67,16 +67,15 @@ export class Camera {
 
                     this.zoomLevel++;
 
-                    this.updateViewport(this.player.position);
+                    this.updateViewport();
                 }
             }
         });
     }
 
     translate(position: Vector2) {
-        this.updateViewport(position);
-
         this.position = position;
+        this.updateViewport();
     }
 
     setIsPlayer(tile: Vector2) {
@@ -84,58 +83,16 @@ export class Camera {
         playerTile.isPlayer = true;
     }
 
-updateViewport(playerPosition?: Vector2) {
+updateViewport() {
         let canvas: any = document.getElementById("canvas");
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
         this.viewportSize = new Vector2(Math.pow(2, this.zoomLevel), Math.pow(2, this.zoomLevel) / 2);
-        let playerPos = playerPosition || this.playerPositionCache;
-        //needs heavy optimization here
-        //get top left and bottom right bounds in world positions
-        let startTilePos: Vector2 = new Vector2(playerPos.x - Math.floor(this.viewportSize.x / 2), playerPos.y - Math.floor(this.viewportSize.y / 2));
-        let endTilePos: Vector2 = new Vector2(startTilePos.x + this.viewportSize.x, startTilePos.y + this.viewportSize.y);
+           
+        let viewportBuffer = this.world.getViewport(this.viewportSize, this.player.position);
 
-        let topLeftChunkPos = this.world.getChunkPositionFromWorldPosition(startTilePos);
-        let bottomRightChunkPos = this.world.getChunkPositionFromWorldPosition(endTilePos);
-        if (playerPosition != null) {
-            let viewportBuffer: Tile[][] = [];
-            //getting the intersecting chunks
-            for (let y = topLeftChunkPos.y; y <= bottomRightChunkPos.y; y++) {
-                let yPos = y - topLeftChunkPos.y;
-                let yCount = viewportBuffer.length;
-                for (let x = topLeftChunkPos.x; x <= bottomRightChunkPos.x; x++) {
-                    let xPos = x - topLeftChunkPos.x;
-                    let chunks = this.world.getChunk(new Vector2(x, y))
-                    let startTile = startTilePos;
-                    let endTile = endTilePos;
-                    let tiles = chunks.getTileSubset(new Bounds(new Vector2(startTile.x, startTile.y), new Vector2(endTile.x, endTile.y)));
-                    //setting the viewport tiles
-                    let yy = 0;
-                    for (yy; yy < tiles.length; yy++) {
-                        let yBuffer = yy + yCount;
-                        if (viewportBuffer[yBuffer] == undefined)
-                            viewportBuffer[yBuffer] = [];
-
-                        viewportBuffer[yBuffer] = viewportBuffer[yBuffer].concat(tiles[yy]);
-                    }
-                }
-            }
-
-            let playerTileCache = null;
-
-            if (this.viewport != null)
-                playerTileCache = this.viewport[Math.floor(this.viewport.length / 2)][Math.floor(this.viewportSize.x / 2)];
-
-            this.viewport = [];
-            this.viewport = viewportBuffer;
-
-            if (playerTileCache)
-                playerTileCache.isPlayer = false;
-        }
-        let playerTile = this.viewport[Math.floor(this.viewportSize.y / 2)][Math.floor(this.viewportSize.x / 2)];
-        playerTile.isPlayer = true;
-
-        this.playerPositionCache = playerTile.worldPosition;
+        this.viewport = [];
+        this.viewport = viewportBuffer;
 
         let flattendTiles = [].concat(...this.viewport);
         this._eventAggregator.publish('RenderEvent', new RenderEvent(this.viewport, this.viewportSize));

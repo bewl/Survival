@@ -1,7 +1,7 @@
 import { inject, Container } from 'aurelia-framework';
 import { Chunk } from './chunk';
 import { Tile } from '../tile/tile';
-
+import { Player } from '../actor/player';
 import { Perlin, Random, Vector2, Bounds, KeyValuePair } from '../helpers';
 
 export class World {
@@ -13,7 +13,9 @@ export class World {
     public seed: number;
     public viewPortAspectRatio: number;
     public viewportScale: number;
+    playerTileCache: Tile;
     private perlin: Perlin;
+    playerPositionCache: Vector2;
     playerTile: Tile;
 
 
@@ -37,34 +39,34 @@ export class World {
         let maxX = startPos.x + this.activeChunkSize;
         let activeChunks: Chunk[][] = [];
         let activeTiles: Tile[][] = [];
-        for(let y = 0; y <= maxY - startPos.y; y++) {
+        for (let y = 0; y <= maxY - startPos.y; y++) {
             activeChunks[y] = [];
-            for(let x = 0; x <= maxX - startPos.x; x++) {
+            for (let x = 0; x <= maxX - startPos.x; x++) {
                 let position: Vector2 = new Vector2(minX + x, minY + y);
                 let chunk = this.chunks[position.y][position.x];
-                
-                if(chunk == null) 
+
+                if (chunk == null)
                     chunk = this.chunks[position.y][position.x] = new Chunk(this.chunkSize, position);
-                
-                activeChunks[y][x] = chunk; 
+
+                activeChunks[y][x] = chunk;
                 activeTiles = activeTiles.concat(chunk.tiles);
             }
         }
 
         this.activeChunks = activeChunks;
         this.activeTiles = activeTiles;
-    }   
+    }
 
     getActiveChunkBounds(viewportSize: number): Bounds {
 
         let topLeft = this.activeChunks[0][0]
-                            .getWorldPositionBounds()
-                            .topLeft;
+            .getWorldPositionBounds()
+            .topLeft;
         let bottomRight = this.activeChunks[this.activeChunks.length - 1][this.activeChunkSize - 1]
-                            .getWorldPositionBounds()
-                            .bottomRight;
+            .getWorldPositionBounds()
+            .bottomRight;
 
-        
+
         return new Bounds(topLeft, bottomRight);
     }
 
@@ -94,5 +96,52 @@ export class World {
             this.chunks.push(chunk);
         }
         return chunk;
+    }
+
+    getViewport(viewportSize: Vector2, playerPosition: Vector2): Tile[][] {
+        let playerPos = playerPosition || this.playerPositionCache;
+        //needs heavy optimization here
+        //get top left and bottom right bounds in world positions
+        let startTilePos: Vector2 = new Vector2(playerPos.x - Math.floor(viewportSize.x / 2), playerPos.y - Math.floor(viewportSize.y / 2));
+        let endTilePos: Vector2 = new Vector2(startTilePos.x + viewportSize.x, startTilePos.y + viewportSize.y);
+
+        let topLeftChunkPos = this.getChunkPositionFromWorldPosition(startTilePos);
+        let bottomRightChunkPos = this.getChunkPositionFromWorldPosition(endTilePos);
+
+        let viewportBuffer: Tile[][] = [];
+        //getting the intersecting chunks
+        for (let y = topLeftChunkPos.y; y <= bottomRightChunkPos.y; y++) {
+            let yPos = y - topLeftChunkPos.y;
+            let yCount = viewportBuffer.length;
+            for (let x = topLeftChunkPos.x; x <= bottomRightChunkPos.x; x++) {
+                let xPos = x - topLeftChunkPos.x;
+                let chunks = this.getChunk(new Vector2(x, y))
+                let startTile = startTilePos;
+                let endTile = endTilePos;
+                let tiles = chunks.getTileSubset(new Bounds(startTile, endTile));
+                //setting the viewport tiles
+                let yy = 0;
+                for (yy; yy < tiles.length; yy++) {
+                    let yBuffer = yy + yCount;
+                    if (viewportBuffer[yBuffer] == undefined)
+                        viewportBuffer[yBuffer] = [];
+
+                    viewportBuffer[yBuffer] = viewportBuffer[yBuffer].concat(tiles[yy]);
+                }
+            }
+        }
+
+        if (this.playerTileCache)
+                this.playerTileCache.isPlayer = false;
+        
+        this.playerTileCache = viewportBuffer[Math.floor(viewportBuffer.length / 2)][Math.floor(viewportSize.x / 2)];
+
+
+        let playerTile = viewportBuffer[Math.floor(viewportSize.y / 2)][Math.floor(viewportSize.x / 2)];
+        playerTile.isPlayer = true;
+
+        this.playerPositionCache = playerTile.worldPosition;
+
+        return viewportBuffer;
     }
 }

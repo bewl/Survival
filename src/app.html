@@ -1,7 +1,7 @@
 <template>
     <canvas id="canvas" ref="canvas" height="500" wdith="1000"> Your browser does not support canvas.</canvas>
     <div id="map" style="position: relative; background-color:black;font-family: 'Courier New', Courier, monospace; width: 100%; height: 100%;">
-        <div id="ui">
+        <div id="ui" ref="ui">
             <div style="display: inline-block;">
                 <h2>Items</h2>
                 <ul>
@@ -44,6 +44,12 @@
                 <div class="dev-stat">
                     <span>viewport size x: ${game.camera.viewportSize.x}</span>
                     <span>viewport size y: ${game.camera.viewportSize.y}</span>
+                </div>
+                <div class="dev-stat">
+                    <span>${game.ui.currentTile.worldPosition.x}</span>
+                    <span>${game.ui.currentTile.worldPosition.y}</span>
+                    <span>${game.ui.currentTile.color}</span>
+                    
                 </div>
                 <button click.delegate="toggleCollision()" innerhtml.bind="game.player.collisionEnabled ? 'Collision On' : 'Collision Off'">Collision</button>
                 <div>

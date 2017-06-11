@@ -17,7 +17,7 @@ export class Input {
         this.mouseWheelHandler = this.handleMouseWheel.bind(this);
         window.addEventListener('keypress', this.boundHandler, false);
         window.addEventListener('mousewheel', this.mouseWheelHandler, false);
-        window.addEventListener('mousemove', this.mouseMoveHandler, false);
+        //window.addEventListener('mousemove', this.mouseMoveHandler, false);
         this.eventAggregator = ea;
     }
 

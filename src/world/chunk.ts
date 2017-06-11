@@ -1,6 +1,6 @@
 import { Container } from 'aurelia-framework';
 import { Tile } from '../tile/tile';
-import { Random, Perlin, Vector2, Bounds } from '../helpers';
+import { Random, Perlin, Vector2, Bounds, GenerateHashCode } from '../helpers';
 import tileData from '../tile/data/tiles';
 const TileData = tileData;
 
@@ -111,7 +111,6 @@ export class Chunk {
 
     getTileByWorldPosition(position: Vector2, chunkSize?: Vector2) {
         let size = chunkSize || this.chunkSize;
-
         
         let targetTileX =  Math.floor(Math.abs(position.x) % this.chunkSize.x);
         let targetTileY = Math.floor(Math.abs(position.y) % this.chunkSize.y);
@@ -139,7 +138,7 @@ export class Chunk {
         let currentLayer = maxLayer;
         //TODO: This could be optimized
         let tileData;
-        let seed = this.perlin.seedValue * parseInt('' + Math.abs(worldPosition.x % 324 + worldPosition.y  % 32422)) + tileWeight * 10000000;
+        let seed = Math.abs(GenerateHashCode('' + Math.floor(this.perlin.seedValue) * (parseInt('' + Math.abs(worldPosition.x * 5 + worldPosition.y * 3)) + tileWeight * 1000)));
         tileData = weightMap.find(tile => {
             //tileweight falls in tile weight range
             if (((tile.weight.max >= tileWeight) || tile.weight.max == null)
