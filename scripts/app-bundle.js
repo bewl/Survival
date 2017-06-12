@@ -511,7 +511,8 @@ define('tile/tile',["require", "exports", "../inventory/inventory"], function (r
 
 define('tile/data/tiles',["require", "exports"], function (require, exports) {
     "use strict";
-    var WATER_MAX = 0.25;
+    var SHALLOW_WATER_MAX = 0.20;
+    var DEEP_WATER_MAX = 0.1;
     var tileData = {
         weightMod: 20,
         weightRange: 20 * 3,
@@ -521,7 +522,7 @@ define('tile/data/tiles',["require", "exports"], function (require, exports) {
                 color: "#228B22",
                 symbol: 183,
                 movementCost: 50,
-                weight: { min: WATER_MAX, max: null },
+                weight: { min: SHALLOW_WATER_MAX, max: null },
                 distanceBuffer: 1000,
                 random: false,
                 randomPercent: 0,
@@ -529,7 +530,7 @@ define('tile/data/tiles',["require", "exports"], function (require, exports) {
             },
             {
                 id: "tree",
-                weight: { min: WATER_MAX + .003, max: 0.50 },
+                weight: { min: SHALLOW_WATER_MAX, max: 0.50 },
                 random: true,
                 randomPercent: 0.35,
                 symbol: 165,
@@ -550,7 +551,7 @@ define('tile/data/tiles',["require", "exports"], function (require, exports) {
             },
             {
                 id: "shallow_water",
-                weight: { min: 0.15, max: WATER_MAX },
+                weight: { min: DEEP_WATER_MAX, max: SHALLOW_WATER_MAX },
                 random: false,
                 randomPercent: 0,
                 symbol: 126,
@@ -560,7 +561,7 @@ define('tile/data/tiles',["require", "exports"], function (require, exports) {
             },
             {
                 id: "deep_water",
-                weight: { min: null, max: 0.15 },
+                weight: { min: null, max: DEEP_WATER_MAX },
                 random: false,
                 randomPercent: 0,
                 symbol: 126,
@@ -673,7 +674,7 @@ define('world/chunk',["require", "exports", "aurelia-framework", "../tile/tile",
             return targetTile;
         };
         Chunk.prototype.generateTile = function (worldPosition, chunkPosition, weightMap, chunkIndex) {
-            var perlinFrequency = .0075;
+            var perlinFrequency = .005;
             var perlinValue = this.perlin.simplex2(Math.abs(worldPosition.x * perlinFrequency), Math.abs(worldPosition.y * perlinFrequency)) * TileData.weightMod;
             perlinValue += this.perlin.simplex2(Math.abs(worldPosition.x * (perlinFrequency * 2)), Math.abs(worldPosition.y * (perlinFrequency * 2))) * (TileData.weightMod / 10);
             perlinValue += this.perlin.simplex2(Math.abs(worldPosition.x * (perlinFrequency * 8)), Math.abs(worldPosition.y * (perlinFrequency * 8))) * (TileData.weightMod / 20);
@@ -694,7 +695,7 @@ define('world/chunk',["require", "exports", "aurelia-framework", "../tile/tile",
                         var show = true;
                         var rnd_1 = new helpers_1.Random(seed);
                         var num = rnd_1.nextInt(1, 10000);
-                        var normalizedWeight = (2 - 1) / (tile.weight.max - tile.weight.min) * (tileWeight - tile.weight.min) + 1;
+                        var normalizedWeight = (3 - 1) / (tile.weight.max - tile.weight.min) * (tileWeight - tile.weight.min) + 1;
                         show = num * normalizedWeight <= (Math.abs(tile.randomPercent)) * 10000;
                         return show;
                     }

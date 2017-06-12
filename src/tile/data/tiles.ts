@@ -1,4 +1,5 @@
-const WATER_MAX = 0.25;
+const SHALLOW_WATER_MAX = 0.20;
+const DEEP_WATER_MAX = 0.1;
 let tileData = {
     weightMod: 20, //modifier to perlin noise result
     weightRange: 20 * 3, //used to modify normalized weight ranges for tiles to correspond to the modified perline noise result
@@ -9,7 +10,7 @@ let tileData = {
             //image: 'grass.png',
             symbol: 183,
             movementCost: 50,
-            weight: { min: WATER_MAX, max: null },
+            weight: { min: SHALLOW_WATER_MAX, max: null },
             distanceBuffer: 1000,
             random: false,
             randomPercent: 0,
@@ -17,7 +18,7 @@ let tileData = {
         },
         {
             id: "tree",
-            weight: { min: WATER_MAX + .003, max: 0.50 },
+            weight: { min: SHALLOW_WATER_MAX, max: 0.50 },
             random: true,
             randomPercent: 0.35,
             symbol: 165,
@@ -40,7 +41,7 @@ let tileData = {
 
         {
             id: "shallow_water",
-            weight: { min: 0.15, max: WATER_MAX },
+            weight: { min: DEEP_WATER_MAX, max: SHALLOW_WATER_MAX },
             random: false,
             randomPercent: 0,
             symbol: 126,
@@ -51,7 +52,7 @@ let tileData = {
 
         {
             id: "deep_water",
-            weight: { min: null, max: 0.15 },
+            weight: { min: null, max: DEEP_WATER_MAX },
             random: false,
             randomPercent: 0,
             symbol: 126,

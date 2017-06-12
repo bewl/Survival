@@ -130,13 +130,13 @@ export class Chunk {
 
     generateTile(worldPosition: Vector2, chunkPosition: Vector2, weightMap: any[], chunkIndex: Vector2): Tile {
         
-        let perlinFrequency = .0075;
+        let perlinFrequency = .005;
 
         let perlinValue = this.perlin.simplex2(Math.abs(worldPosition.x * perlinFrequency), Math.abs(worldPosition.y * perlinFrequency)) * TileData.weightMod;
-        perlinValue += this.perlin.simplex2(Math.abs(worldPosition.x * (perlinFrequency * 2)), Math.abs(worldPosition.y * (perlinFrequency * 2))) * (TileData.weightMod / 10)
-        perlinValue += this.perlin.simplex2(Math.abs(worldPosition.x * (perlinFrequency * 8)), Math.abs(worldPosition.y * (perlinFrequency * 8))) * (TileData.weightMod / 20)
-        perlinValue += this.perlin.simplex2(Math.abs(worldPosition.x * (perlinFrequency * 14)), Math.abs(worldPosition.y * (perlinFrequency * 14))) * (TileData.weightMod / 40)
-        perlinValue += this.perlin.simplex2(Math.abs(worldPosition.x * (perlinFrequency * 20)), Math.abs(worldPosition.y * (perlinFrequency * 20))) * (TileData.weightMod / 80)
+        perlinValue += this.perlin.simplex2(Math.abs(worldPosition.x * (perlinFrequency * 2)), Math.abs(worldPosition.y * (perlinFrequency * 2))) * (TileData.weightMod / 10);
+        perlinValue += this.perlin.simplex2(Math.abs(worldPosition.x * (perlinFrequency * 8)), Math.abs(worldPosition.y * (perlinFrequency * 8))) * (TileData.weightMod / 20);
+        perlinValue += this.perlin.simplex2(Math.abs(worldPosition.x * (perlinFrequency * 14)), Math.abs(worldPosition.y * (perlinFrequency * 14))) * (TileData.weightMod / 40);
+        perlinValue += this.perlin.simplex2(Math.abs(worldPosition.x * (perlinFrequency * 20)), Math.abs(worldPosition.y * (perlinFrequency * 20))) * (TileData.weightMod / 80);
 
         let tileWeight = perlinValue;
         let tileType = null;
@@ -158,7 +158,7 @@ export class Chunk {
                     let show = true;
                     let rnd = new Random(seed);
                     let num = rnd.nextInt(1, 10000);
-                    let normalizedWeight = (2 - 1) / (tile.weight.max - tile.weight.min) * (tileWeight - tile.weight.min) + 1;
+                    let normalizedWeight = (3 - 1) / (tile.weight.max - tile.weight.min) * (tileWeight - tile.weight.min) + 1;
                     show = num * normalizedWeight <= (Math.abs(tile.randomPercent)) * 10000;
                     //If we are not going to randomly show the tile then
                     //We need to go down to the NEXT layer, and not the next decrement of the same layer 
