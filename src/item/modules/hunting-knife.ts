@@ -14,5 +14,7 @@ export class HuntingKnife extends Knife {
     use() {
         super.use();
         this.player.health.damage("head", 5);
+
+        return true;
     }
 }

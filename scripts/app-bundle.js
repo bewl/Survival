@@ -386,7 +386,7 @@ define('helpers',["require", "exports"], function (require, exports) {
     exports.Bounds = Bounds;
 });
 
-define('inventory/inventory',["require", "exports", "../item/item", "../helpers"], function (require, exports, item_1, helpers_1) {
+define('inventory/inventory',["require", "exports", '../item/item', '../helpers'], function (require, exports, item_1, helpers_1) {
     "use strict";
     var Inventory = (function () {
         function Inventory() {
@@ -493,7 +493,7 @@ define('actor/health',["require", "exports"], function (require, exports) {
     exports.Health = Health;
 });
 
-define('tile/tile',["require", "exports", "../inventory/inventory"], function (require, exports, inventory_1) {
+define('tile/tile',["require", "exports", '../inventory/inventory'], function (require, exports, inventory_1) {
     "use strict";
     var Tile = (function () {
         function Tile(chunkPosition, worldPosition, tileWeight, chunkIndex) {
@@ -574,7 +574,7 @@ define('tile/data/tiles',["require", "exports"], function (require, exports) {
     exports.default = tileData;
 });
 
-define('world/chunk',["require", "exports", "aurelia-framework", "../tile/tile", "../helpers", "../tile/data/tiles"], function (require, exports, aurelia_framework_1, tile_1, helpers_1, tiles_1) {
+define('world/chunk',["require", "exports", 'aurelia-framework', '../tile/tile', '../helpers', '../tile/data/tiles'], function (require, exports, aurelia_framework_1, tile_1, helpers_1, tiles_1) {
     "use strict";
     var TileData = tiles_1.default;
     var Chunk = (function () {
@@ -718,7 +718,7 @@ define('world/chunk',["require", "exports", "aurelia-framework", "../tile/tile",
     exports.Chunk = Chunk;
 });
 
-define('world/world',["require", "exports", "aurelia-framework", "./chunk", "../helpers"], function (require, exports, aurelia_framework_1, chunk_1, helpers_1) {
+define('world/world',["require", "exports", 'aurelia-framework', './chunk', '../helpers'], function (require, exports, aurelia_framework_1, chunk_1, helpers_1) {
     "use strict";
     var World = (function () {
         function World() {
@@ -814,7 +814,7 @@ define('world/world',["require", "exports", "aurelia-framework", "./chunk", "../
     exports.World = World;
 });
 
-define('actor/actor',["require", "exports", "aurelia-framework", "../world/world", "../inventory/inventory", "./health"], function (require, exports, aurelia_framework_1, world_1, inventory_1, health_1) {
+define('actor/actor',["require", "exports", 'aurelia-framework', '../world/world', '../inventory/inventory', './health'], function (require, exports, aurelia_framework_1, world_1, inventory_1, health_1) {
     "use strict";
     var Actor = (function () {
         function Actor() {
@@ -828,22 +828,17 @@ define('actor/actor',["require", "exports", "aurelia-framework", "../world/world
     exports.Actor = Actor;
 });
 
-var __extends = (this && this.__extends) || (function () {
-    var extendStatics = Object.setPrototypeOf ||
-        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
-    return function (d, b) {
-        extendStatics(d, b);
-        function __() { this.constructor = d; }
-        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-    };
-})();
-define('actor/monster',["require", "exports", "./actor"], function (require, exports, actor_1) {
+var __extends = (this && this.__extends) || function (d, b) {
+    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
+    function __() { this.constructor = d; }
+    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+};
+define('actor/monster',["require", "exports", './actor'], function (require, exports, actor_1) {
     "use strict";
     var Monster = (function (_super) {
         __extends(Monster, _super);
         function Monster() {
-            return _super.call(this) || this;
+            _super.call(this);
         }
         Monster.prototype.attack = function () {
         };
@@ -863,27 +858,21 @@ define('events/player-moved-event',["require", "exports"], function (require, ex
     exports.PlayerMovedEvent = PlayerMovedEvent;
 });
 
-var __extends = (this && this.__extends) || (function () {
-    var extendStatics = Object.setPrototypeOf ||
-        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
-    return function (d, b) {
-        extendStatics(d, b);
-        function __() { this.constructor = d; }
-        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-    };
-})();
-define('actor/player',["require", "exports", "aurelia-framework", "../helpers", "./actor", "aurelia-event-aggregator", "../events/player-moved-event"], function (require, exports, aurelia_framework_1, helpers_1, actor_1, aurelia_event_aggregator_1, player_moved_event_1) {
+var __extends = (this && this.__extends) || function (d, b) {
+    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
+    function __() { this.constructor = d; }
+    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+};
+define('actor/player',["require", "exports", 'aurelia-framework', '../helpers', './actor', 'aurelia-event-aggregator', '../events/player-moved-event'], function (require, exports, aurelia_framework_1, helpers_1, actor_1, aurelia_event_aggregator_1, player_moved_event_1) {
     "use strict";
     var Player = (function (_super) {
         __extends(Player, _super);
         function Player() {
-            var _this = _super.call(this) || this;
-            _this.collisionEnabled = false;
-            _this.inspectRadius = 1;
-            _this.enemy = null;
-            _this.eventAggregator = aurelia_framework_1.Container.instance.get(aurelia_event_aggregator_1.EventAggregator);
-            return _this;
+            _super.call(this);
+            this.collisionEnabled = false;
+            this.inspectRadius = 1;
+            this.enemy = null;
+            this.eventAggregator = aurelia_framework_1.Container.instance.get(aurelia_event_aggregator_1.EventAggregator);
         }
         Player.prototype.pickUp = function (item) {
             this.inventory.addItem(item);
@@ -961,7 +950,7 @@ define('actor/player',["require", "exports", "aurelia-framework", "../helpers", 
     exports.Player = Player;
 });
 
-define('item/item-module',["require", "exports", "aurelia-framework", "../actor/player"], function (require, exports, aurelia_framework_1, player_1) {
+define('item/item-module',["require", "exports", 'aurelia-framework', '../actor/player'], function (require, exports, aurelia_framework_1, player_1) {
     "use strict";
     var ItemModule = (function () {
         function ItemModule() {
@@ -999,7 +988,7 @@ define('item/stats/weapon-stats',["require", "exports"], function (require, expo
     exports.WeaponStats = WeaponStats;
 });
 
-define('item/item',["require", "exports", "aurelia-dependency-injection", "../actor/player", "./stats/item-stats", "./stats/weapon-stats"], function (require, exports, aurelia_dependency_injection_1, player_1, item_stats_1, weapon_stats_1) {
+define('item/item',["require", "exports", 'aurelia-dependency-injection', '../actor/player', './stats/item-stats', './stats/weapon-stats'], function (require, exports, aurelia_dependency_injection_1, player_1, item_stats_1, weapon_stats_1) {
     "use strict";
     var Item = (function () {
         function Item() {
@@ -1159,7 +1148,52 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
-define('input/input',["require", "exports", "aurelia-framework", "../actor/player", "aurelia-event-aggregator", "../ui/ui"], function (require, exports, aurelia_framework_1, player_1, aurelia_event_aggregator_1, ui_1) {
+define('ui/ui',["require", "exports", 'aurelia-framework', 'aurelia-event-aggregator'], function (require, exports, aurelia_framework_1, aurelia_event_aggregator_1) {
+    "use strict";
+    var UI = (function () {
+        function UI(ea) {
+            var _this = this;
+            this.selectedTiles = [];
+            this.eventAggregator = ea;
+            ea.subscribe("TileInfo", function (tile) {
+                _this.currentTile = tile;
+            });
+        }
+        UI.prototype.selectTile = function (tile) {
+            this.selectedTiles.push(tile);
+        };
+        Object.defineProperty(UI.prototype, "isSelecting", {
+            get: function () {
+                return this.selectedTiles.length > 0;
+            },
+            enumerable: true,
+            configurable: true
+        });
+        UI.prototype.deselectTiles = function () {
+            this.selectedTiles.forEach(function (tile) {
+                tile.isSelected = false;
+            });
+            this.selectedTiles = [];
+        };
+        UI = __decorate([
+            aurelia_framework_1.inject(aurelia_event_aggregator_1.EventAggregator), 
+            __metadata('design:paramtypes', [aurelia_event_aggregator_1.EventAggregator])
+        ], UI);
+        return UI;
+    }());
+    exports.UI = UI;
+});
+
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+define('input/input',["require", "exports", 'aurelia-framework', '../actor/player', 'aurelia-event-aggregator', '../ui/ui'], function (require, exports, aurelia_framework_1, player_1, aurelia_event_aggregator_1, ui_1) {
     "use strict";
     var Input = (function () {
         function Input(player, ea, ui) {
@@ -1260,12 +1294,12 @@ define('input/input',["require", "exports", "aurelia-framework", "../actor/playe
                 this.lastPressed = time;
             }
         };
+        Input = __decorate([
+            aurelia_framework_1.inject(player_1.Player, aurelia_event_aggregator_1.EventAggregator, ui_1.UI), 
+            __metadata('design:paramtypes', [Object, Object, Object])
+        ], Input);
         return Input;
     }());
-    Input = __decorate([
-        aurelia_framework_1.inject(player_1.Player, aurelia_event_aggregator_1.EventAggregator, ui_1.UI),
-        __metadata("design:paramtypes", [Object, Object, Object])
-    ], Input);
     exports.Input = Input;
 });
 
@@ -1290,7 +1324,7 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
-define('camera',["require", "exports", "aurelia-framework", "./actor/player", "./helpers", "./world/world", "./ui/ui", "aurelia-event-aggregator", "./events/render-event"], function (require, exports, aurelia_framework_1, player_1, helpers_1, world_1, ui_1, aurelia_event_aggregator_1, render_event_1) {
+define('camera',["require", "exports", 'aurelia-framework', './actor/player', './helpers', './world/world', './ui/ui', 'aurelia-event-aggregator', './events/render-event'], function (require, exports, aurelia_framework_1, player_1, helpers_1, world_1, ui_1, aurelia_event_aggregator_1, render_event_1) {
     "use strict";
     var Camera = (function () {
         function Camera(world, eventAggregator, player, ui) {
@@ -1349,15 +1383,16 @@ define('camera',["require", "exports", "aurelia-framework", "./actor/player", ".
             var viewportBuffer = this.world.getViewport(this.viewportSize, this.player.position);
             this.viewport = [];
             this.viewport = viewportBuffer;
-            var flattendTiles = [].concat.apply([], this.viewport);
+            var flattendTiles = (_a = []).concat.apply(_a, this.viewport);
             this._eventAggregator.publish('RenderEvent', new render_event_1.RenderEvent(this.viewport, this.viewportSize));
+            var _a;
         };
+        Camera = __decorate([
+            aurelia_framework_1.inject(world_1.World, aurelia_event_aggregator_1.EventAggregator, player_1.Player, ui_1.UI), 
+            __metadata('design:paramtypes', [Object, Object, Object, Object])
+        ], Camera);
         return Camera;
     }());
-    Camera = __decorate([
-        aurelia_framework_1.inject(world_1.World, aurelia_event_aggregator_1.EventAggregator, player_1.Player, ui_1.UI),
-        __metadata("design:paramtypes", [Object, Object, Object, Object])
-    ], Camera);
     exports.Camera = Camera;
 });
 
@@ -1370,52 +1405,7 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
-define('ui/ui',["require", "exports", "aurelia-framework", "aurelia-event-aggregator"], function (require, exports, aurelia_framework_1, aurelia_event_aggregator_1) {
-    "use strict";
-    var UI = (function () {
-        function UI(ea) {
-            var _this = this;
-            this.selectedTiles = [];
-            this.eventAggregator = ea;
-            ea.subscribe("TileInfo", function (tile) {
-                _this.currentTile = tile;
-            });
-        }
-        UI.prototype.selectTile = function (tile) {
-            this.selectedTiles.push(tile);
-        };
-        Object.defineProperty(UI.prototype, "isSelecting", {
-            get: function () {
-                return this.selectedTiles.length > 0;
-            },
-            enumerable: true,
-            configurable: true
-        });
-        UI.prototype.deselectTiles = function () {
-            this.selectedTiles.forEach(function (tile) {
-                tile.isSelected = false;
-            });
-            this.selectedTiles = [];
-        };
-        return UI;
-    }());
-    UI = __decorate([
-        aurelia_framework_1.inject(aurelia_event_aggregator_1.EventAggregator),
-        __metadata("design:paramtypes", [aurelia_event_aggregator_1.EventAggregator])
-    ], UI);
-    exports.UI = UI;
-});
-
-var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
-    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
-    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
-    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
-    return c > 3 && r && Object.defineProperty(target, key, r), r;
-};
-var __metadata = (this && this.__metadata) || function (k, v) {
-    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
-};
-define('game',["require", "exports", "aurelia-framework", "./actor/player", "./item/item-context", "./world/world", "./helpers", "./input/input", "./camera", "./helpers", "aurelia-event-aggregator", "./ui/ui"], function (require, exports, aurelia_framework_1, player_1, item_context_1, world_1, helpers_1, input_1, camera_1, helpers_2, aurelia_event_aggregator_1, ui_1) {
+define('game',["require", "exports", 'aurelia-framework', './actor/player', './item/item-context', './world/world', './helpers', './input/input', './camera', './helpers', 'aurelia-event-aggregator', './ui/ui'], function (require, exports, aurelia_framework_1, player_1, item_context_1, world_1, helpers_1, input_1, camera_1, helpers_2, aurelia_event_aggregator_1, ui_1) {
     "use strict";
     var Game = (function () {
         function Game(player, world, itemContext, input, camera, ea, ui) {
@@ -1440,12 +1430,12 @@ define('game',["require", "exports", "aurelia-framework", "./actor/player", "./i
             var position = new helpers_1.Vector2(10000, 100000);
             this.player.setPlayerPosition(position);
         };
+        Game = __decorate([
+            aurelia_framework_1.inject(player_1.Player, world_1.World, item_context_1.ItemContext, input_1.Input, camera_1.Camera, aurelia_event_aggregator_1.EventAggregator, ui_1.UI), 
+            __metadata('design:paramtypes', [player_1.Player, world_1.World, item_context_1.ItemContext, input_1.Input, camera_1.Camera, aurelia_event_aggregator_1.EventAggregator, ui_1.UI])
+        ], Game);
         return Game;
     }());
-    Game = __decorate([
-        aurelia_framework_1.inject(player_1.Player, world_1.World, item_context_1.ItemContext, input_1.Input, camera_1.Camera, aurelia_event_aggregator_1.EventAggregator, ui_1.UI),
-        __metadata("design:paramtypes", [player_1.Player, world_1.World, item_context_1.ItemContext, input_1.Input, camera_1.Camera, aurelia_event_aggregator_1.EventAggregator, ui_1.UI])
-    ], Game);
     exports.Game = Game;
 });
 
@@ -1458,7 +1448,7 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
-define('renderer',["require", "exports", "aurelia-event-aggregator", "aurelia-framework", "./game", "./helpers", "./ui/ui"], function (require, exports, aurelia_event_aggregator_1, aurelia_framework_1, game_1, helpers_1, ui_1) {
+define('renderer',["require", "exports", 'aurelia-event-aggregator', 'aurelia-framework', './game', './helpers', './ui/ui'], function (require, exports, aurelia_event_aggregator_1, aurelia_framework_1, game_1, helpers_1, ui_1) {
     "use strict";
     var Renderer = (function () {
         function Renderer(ea, game, ui) {
@@ -1523,12 +1513,12 @@ define('renderer',["require", "exports", "aurelia-event-aggregator", "aurelia-fr
             }
             this.ctx.drawImage(offscreen, 0, 0);
         };
+        Renderer = __decorate([
+            aurelia_framework_1.inject(aurelia_event_aggregator_1.EventAggregator, game_1.Game, ui_1.UI), 
+            __metadata('design:paramtypes', [aurelia_event_aggregator_1.EventAggregator, game_1.Game, ui_1.UI])
+        ], Renderer);
         return Renderer;
     }());
-    Renderer = __decorate([
-        aurelia_framework_1.inject(aurelia_event_aggregator_1.EventAggregator, game_1.Game, ui_1.UI),
-        __metadata("design:paramtypes", [aurelia_event_aggregator_1.EventAggregator, game_1.Game, ui_1.UI])
-    ], Renderer);
     exports.Renderer = Renderer;
     var ImageRepo = (function () {
         function ImageRepo() {
@@ -1557,7 +1547,7 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
-define('app',["require", "exports", "aurelia-framework", "./game", "./renderer"], function (require, exports, aurelia_framework_1, game_1, renderer_1) {
+define('app',["require", "exports", 'aurelia-framework', './game', './renderer'], function (require, exports, aurelia_framework_1, game_1, renderer_1) {
     "use strict";
     var App = (function () {
         function App(game, renderer) {
@@ -1590,12 +1580,12 @@ define('app',["require", "exports", "aurelia-framework", "./game", "./renderer"]
         App.prototype.toggleCollision = function () {
             this.game.player.toggleCollision();
         };
+        App = __decorate([
+            aurelia_framework_1.inject(game_1.Game, renderer_1.Renderer), 
+            __metadata('design:paramtypes', [game_1.Game, renderer_1.Renderer])
+        ], App);
         return App;
     }());
-    App = __decorate([
-        aurelia_framework_1.inject(game_1.Game, renderer_1.Renderer),
-        __metadata("design:paramtypes", [game_1.Game, renderer_1.Renderer])
-    ], App);
     exports.App = App;
 });
 
@@ -1608,16 +1598,11 @@ define('environment',["require", "exports"], function (require, exports) {
     };
 });
 
-var __extends = (this && this.__extends) || (function () {
-    var extendStatics = Object.setPrototypeOf ||
-        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
-    return function (d, b) {
-        extendStatics(d, b);
-        function __() { this.constructor = d; }
-        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-    };
-})();
+var __extends = (this && this.__extends) || function (d, b) {
+    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
+    function __() { this.constructor = d; }
+    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+};
 var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
     if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
@@ -1627,34 +1612,29 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
-define('item/modules/knife',["require", "exports", "../item-module", "aurelia-framework"], function (require, exports, item_module_1, aurelia_framework_1) {
+define('item/modules/knife',["require", "exports", '../item-module', 'aurelia-framework'], function (require, exports, item_module_1, aurelia_framework_1) {
     "use strict";
     var Knife = (function (_super) {
         __extends(Knife, _super);
         function Knife() {
-            return _super.call(this) || this;
+            _super.call(this);
         }
         Knife.prototype.wield = function () {
         };
+        Knife = __decorate([
+            aurelia_framework_1.noView, 
+            __metadata('design:paramtypes', [])
+        ], Knife);
         return Knife;
     }(item_module_1.ItemModule));
-    Knife = __decorate([
-        aurelia_framework_1.noView,
-        __metadata("design:paramtypes", [])
-    ], Knife);
     exports.Knife = Knife;
 });
 
-var __extends = (this && this.__extends) || (function () {
-    var extendStatics = Object.setPrototypeOf ||
-        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
-    return function (d, b) {
-        extendStatics(d, b);
-        function __() { this.constructor = d; }
-        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-    };
-})();
+var __extends = (this && this.__extends) || function (d, b) {
+    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
+    function __() { this.constructor = d; }
+    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+};
 var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
     if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
@@ -1664,12 +1644,12 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
-define('item/modules/hunting-knife',["require", "exports", "./knife", "aurelia-framework"], function (require, exports, knife_1, aurelia_framework_1) {
+define('item/modules/hunting-knife',["require", "exports", './knife', 'aurelia-framework'], function (require, exports, knife_1, aurelia_framework_1) {
     "use strict";
     var HuntingKnife = (function (_super) {
         __extends(HuntingKnife, _super);
         function HuntingKnife() {
-            return _super.call(this) || this;
+            _super.call(this);
         }
         HuntingKnife.prototype.wield = function () {
             _super.prototype.wield.call(this);
@@ -1677,32 +1657,28 @@ define('item/modules/hunting-knife',["require", "exports", "./knife", "aurelia-f
         HuntingKnife.prototype.use = function () {
             _super.prototype.use.call(this);
             this.player.health.damage("head", 5);
+            return true;
         };
+        HuntingKnife = __decorate([
+            aurelia_framework_1.noView, 
+            __metadata('design:paramtypes', [])
+        ], HuntingKnife);
         return HuntingKnife;
     }(knife_1.Knife));
-    HuntingKnife = __decorate([
-        aurelia_framework_1.noView,
-        __metadata("design:paramtypes", [])
-    ], HuntingKnife);
     exports.HuntingKnife = HuntingKnife;
 });
 
-var __extends = (this && this.__extends) || (function () {
-    var extendStatics = Object.setPrototypeOf ||
-        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
-    return function (d, b) {
-        extendStatics(d, b);
-        function __() { this.constructor = d; }
-        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-    };
-})();
-define('item/modules/bandage',["require", "exports", "../item-module"], function (require, exports, item_module_1) {
+var __extends = (this && this.__extends) || function (d, b) {
+    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
+    function __() { this.constructor = d; }
+    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+};
+define('item/modules/bandage',["require", "exports", '../item-module'], function (require, exports, item_module_1) {
     "use strict";
     var Bandage = (function (_super) {
         __extends(Bandage, _super);
         function Bandage() {
-            return _super.call(this) || this;
+            _super.call(this);
         }
         Bandage.prototype.use = function () {
             if (this.player.health.value('head') + 3 <= this.player.health.maxHealth) {
@@ -1716,7 +1692,7 @@ define('item/modules/bandage',["require", "exports", "../item-module"], function
     exports.Bandage = Bandage;
 });
 
-define('item/item-module-containers',["require", "exports", "aurelia-framework", "./modules/hunting-knife", "./modules/knife", "./modules/bandage"], function (require, exports, aurelia_framework_1, hunting_knife_1, knife_1, bandage_1) {
+define('item/item-module-containers',["require", "exports", 'aurelia-framework', './modules/hunting-knife', './modules/knife', './modules/bandage'], function (require, exports, aurelia_framework_1, hunting_knife_1, knife_1, bandage_1) {
     "use strict";
     function RegisterItemModules() {
         aurelia_framework_1.Container.instance.registerInstance('hunting-knife', new hunting_knife_1.HuntingKnife());
@@ -1726,7 +1702,7 @@ define('item/item-module-containers',["require", "exports", "aurelia-framework",
     exports.RegisterItemModules = RegisterItemModules;
 });
 
-define('main',["require", "exports", "./environment", "./item/item-module-containers"], function (require, exports, environment_1, item_module_containers_1) {
+define('main',["require", "exports", './environment', './item/item-module-containers'], function (require, exports, environment_1, item_module_containers_1) {
     "use strict";
     Promise.config({
         warnings: {
@@ -1771,7 +1747,6 @@ define('dungeon/room',["require", "exports"], function (require, exports) {
 
 define('input/keybinds',["require", "exports"], function (require, exports) {
     "use strict";
-    var Keybinds;
     (function (Keybinds) {
         Keybinds[Keybinds["A"] = 0] = "A";
         Keybinds[Keybinds["B"] = 1] = "B";
@@ -1787,7 +1762,8 @@ define('input/keybinds',["require", "exports"], function (require, exports) {
         Keybinds[Keybinds["NUM8"] = 11] = "NUM8";
         Keybinds[Keybinds["NUM9"] = 12] = "NUM9";
         Keybinds[Keybinds["NUM0"] = 13] = "NUM0";
-    })(Keybinds = exports.Keybinds || (exports.Keybinds = {}));
+    })(exports.Keybinds || (exports.Keybinds = {}));
+    var Keybinds = exports.Keybinds;
 });
 
 define('resources/index',["require", "exports"], function (require, exports) {
