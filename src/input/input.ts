@@ -1,17 +1,19 @@
 import { inject } from 'aurelia-framework';
 import { Player } from '../actor/player';
 import { EventAggregator } from 'aurelia-event-aggregator';
-
-@inject(Player, EventAggregator)
+import { UI } from '../ui/ui';
+@inject(Player, EventAggregator, UI)
 export class Input {
     private player: Player;
     private eventAggregator: EventAggregator;
+    private ui: UI;
     private boundHandler;
     private mouseWheelHandler;
     private mouseMoveHandler;
     private lastPressed = 0;
-    constructor(player, ea) {
+    constructor(player, ea, ui) {
         this.player = player;
+        this.ui = ui;
         this.mouseMoveHandler = this.handleMouseMove.bind(this);
         this.boundHandler = this.handleKeyInput.bind(this);
         this.mouseWheelHandler = this.handleMouseWheel.bind(this);
@@ -54,11 +56,13 @@ export class Input {
 
     handleKeyInput(event) {
         let time = new Date().getTime();
-        let delta = 55;
+        let delta = 15;
         let diagDelta = delta * 2;
 
         if (time > this.lastPressed + delta) {
             switch (event.code.toUpperCase()) {
+                case "27": //Escape
+                    this.ui.deselectTiles();
                 case "65":
                     break;
                 case "66":
@@ -73,6 +77,9 @@ export class Input {
                     this.movePlayer('sw');
                     time += diagDelta;
                     break;
+                case "40":
+                    this.movePlayer('s');
+                    break;
                 case "NUMPAD2":
                     this.movePlayer('s');
                     break;
@@ -80,8 +87,14 @@ export class Input {
                     this.movePlayer('se');
                     time += diagDelta;
                     break;
+                case "39":
+                    this.movePlayer('w');
+                    break;
                 case "NUMPAD4":
                     this.movePlayer('w');
+                    break;
+                case "39":
+                    this.movePlayer('e');
                     break;
                 case "NUMPAD6":
                     this.movePlayer('e');
@@ -89,6 +102,9 @@ export class Input {
                 case "NUMPAD7":
                     this.movePlayer('nw');
                     time += diagDelta;
+                    break;
+                case "39":
+                    this.movePlayer('n');
                     break;
                 case "NUMPAD8":
                     this.movePlayer('n');

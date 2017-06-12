@@ -18,6 +18,10 @@ export class UI {
         this.selectedTiles.push(tile);
     }
 
+    get isSelecting() {
+        return this.selectedTiles.length > 0;
+    }
+
     deselectTiles() {
         this.selectedTiles.forEach(tile => {
             tile.isSelected = false;

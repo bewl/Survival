@@ -40,6 +40,7 @@ export class Camera {
         this._eventAggregator.subscribe('PlayerMoved', (event: PlayerMovedEvent) => {
             this.ui.deselectTiles();
             this.translate(event.position);
+            this.updateViewport();
         });
 
         this._eventAggregator.subscribe('Update', (playerPos?: Vector2) => {
@@ -77,7 +78,7 @@ export class Camera {
 
     translate(position: Vector2) {
         this.position = position;
-        this.updateViewport();
+        //this.updateViewport();
     }
 
     setIsPlayer(tile: Vector2) {

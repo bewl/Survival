@@ -89,7 +89,7 @@ define('helpers',["require", "exports"], function (require, exports) {
             min = min || 0;
             this.seed = (this.seed * 9301 + 49297) % 233281;
             var rnd = this.seed / 233280;
-            return min + rnd * (max - min);
+            return Math.abs(min + rnd * (max - min));
         };
         Random.prototype.nextInt = function (min, max) {
             return Math.round(this.next(min, max));
@@ -511,14 +511,14 @@ define('tile/tile',["require", "exports", "../inventory/inventory"], function (r
 
 define('tile/data/tiles',["require", "exports"], function (require, exports) {
     "use strict";
-    var WATER_MAX = 0.1;
+    var WATER_MAX = 0.25;
     var tileData = {
         weightMod: 20,
         weightRange: 20 * 3,
         tiles: [
             {
                 id: "grass",
-                color: "#66CD00",
+                color: "#228B22",
                 symbol: 183,
                 movementCost: 50,
                 weight: { min: WATER_MAX, max: null },
@@ -529,7 +529,7 @@ define('tile/data/tiles',["require", "exports"], function (require, exports) {
             },
             {
                 id: "tree",
-                weight: { min: WATER_MAX + .003, max: 0.35 },
+                weight: { min: WATER_MAX + .003, max: 0.50 },
                 random: true,
                 randomPercent: 0.35,
                 symbol: 165,
@@ -540,21 +540,31 @@ define('tile/data/tiles',["require", "exports"], function (require, exports) {
             },
             {
                 id: "stone",
-                weight: { min: 0.40, max: 0.5 },
+                weight: { min: 0.40, max: 0.7 },
                 random: true,
-                randomPercent: 0.01,
+                randomPercent: 0.0005,
                 symbol: 186,
                 color: '#b8c0c8',
                 movementCost: -1,
                 layer: 1.1
             },
             {
-                id: "water",
-                weight: { min: null, max: WATER_MAX },
+                id: "shallow_water",
+                weight: { min: 0.15, max: WATER_MAX },
                 random: false,
                 randomPercent: 0,
                 symbol: 126,
                 color: '#1E90FF',
+                movementCost: -1,
+                layer: 1000
+            },
+            {
+                id: "deep_water",
+                weight: { min: null, max: 0.15 },
+                random: false,
+                randomPercent: 0,
+                symbol: 126,
+                color: '#1D7CF2',
                 movementCost: -1,
                 layer: 1000
             }
@@ -663,21 +673,29 @@ define('world/chunk',["require", "exports", "aurelia-framework", "../tile/tile",
             return targetTile;
         };
         Chunk.prototype.generateTile = function (worldPosition, chunkPosition, weightMap, chunkIndex) {
-            var perlinDivisor = 100;
-            var tileWeight = Math.ceil(this.perlin.simplex2(worldPosition.x / perlinDivisor, worldPosition.y / perlinDivisor) * TileData.weightMod);
+            var perlinFrequency = .0075;
+            var perlinValue = this.perlin.simplex2(Math.abs(worldPosition.x * perlinFrequency), Math.abs(worldPosition.y * perlinFrequency)) * TileData.weightMod;
+            perlinValue += this.perlin.simplex2(Math.abs(worldPosition.x * (perlinFrequency * 2)), Math.abs(worldPosition.y * (perlinFrequency * 2))) * (TileData.weightMod / 10);
+            perlinValue += this.perlin.simplex2(Math.abs(worldPosition.x * (perlinFrequency * 8)), Math.abs(worldPosition.y * (perlinFrequency * 8))) * (TileData.weightMod / 20);
+            perlinValue += this.perlin.simplex2(Math.abs(worldPosition.x * (perlinFrequency * 14)), Math.abs(worldPosition.y * (perlinFrequency * 14))) * (TileData.weightMod / 40);
+            perlinValue += this.perlin.simplex2(Math.abs(worldPosition.x * (perlinFrequency * 20)), Math.abs(worldPosition.y * (perlinFrequency * 20))) * (TileData.weightMod / 80);
+            var tileWeight = perlinValue;
             var tileType = null;
             var maxLayer = 1000;
             var currentLayer = maxLayer;
             var tileData;
-            var seed = Math.abs(helpers_1.GenerateHashCode('' + Math.floor(this.perlin.seedValue) * (parseInt('' + Math.abs(worldPosition.x * 5 + worldPosition.y * 3)) + tileWeight * 1000)));
+            var rndSeed = Math.abs((worldPosition.x * (chunkIndex.y + 1)) << 16 + (worldPosition.y * (chunkIndex.x + 1)) + this.perlin.seedValue);
+            var rnd = new helpers_1.Random(rndSeed);
+            var seed = Math.abs(helpers_1.GenerateHashCode('' + Math.floor(this.perlin.seedValue) * (parseInt('' + rndSeed) + tileWeight * 1000)));
             tileData = weightMap.find(function (tile) {
                 if (((tile.weight.max >= tileWeight) || tile.weight.max == null)
                     && ((tile.weight.min <= tileWeight) || tile.weight.min == null)) {
                     if (tile.randomPercent != null && tile.randomPercent != 0) {
                         var show = true;
-                        var rnd = new helpers_1.Random(seed);
-                        var num = rnd.nextInt(1, 100);
-                        show = num <= Math.abs(tile.randomPercent) * 100;
+                        var rnd_1 = new helpers_1.Random(seed);
+                        var num = rnd_1.nextInt(1, 10000);
+                        var normalizedWeight = (2 - 1) / (tile.weight.max - tile.weight.min) * (tileWeight - tile.weight.min) + 1;
+                        show = num * normalizedWeight <= (Math.abs(tile.randomPercent)) * 10000;
                         return show;
                     }
                     return true;
@@ -862,7 +880,7 @@ define('actor/player',["require", "exports", "aurelia-framework", "../helpers", 
         function Player() {
             var _this = _super.call(this) || this;
             _this.collisionEnabled = false;
-            _this.inspectRadius = 2;
+            _this.inspectRadius = 1;
             _this.enemy = null;
             _this.eventAggregator = aurelia_framework_1.Container.instance.get(aurelia_event_aggregator_1.EventAggregator);
             return _this;
@@ -1141,12 +1159,13 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
-define('input/input',["require", "exports", "aurelia-framework", "../actor/player", "aurelia-event-aggregator"], function (require, exports, aurelia_framework_1, player_1, aurelia_event_aggregator_1) {
+define('input/input',["require", "exports", "aurelia-framework", "../actor/player", "aurelia-event-aggregator", "../ui/ui"], function (require, exports, aurelia_framework_1, player_1, aurelia_event_aggregator_1, ui_1) {
     "use strict";
     var Input = (function () {
-        function Input(player, ea) {
+        function Input(player, ea, ui) {
             this.lastPressed = 0;
             this.player = player;
+            this.ui = ui;
             this.mouseMoveHandler = this.handleMouseMove.bind(this);
             this.boundHandler = this.handleKeyInput.bind(this);
             this.mouseWheelHandler = this.handleMouseWheel.bind(this);
@@ -1181,10 +1200,12 @@ define('input/input',["require", "exports", "aurelia-framework", "../actor/playe
         };
         Input.prototype.handleKeyInput = function (event) {
             var time = new Date().getTime();
-            var delta = 55;
+            var delta = 15;
             var diagDelta = delta * 2;
             if (time > this.lastPressed + delta) {
                 switch (event.code.toUpperCase()) {
+                    case "27":
+                        this.ui.deselectTiles();
                     case "65":
                         break;
                     case "66":
@@ -1199,6 +1220,9 @@ define('input/input',["require", "exports", "aurelia-framework", "../actor/playe
                         this.movePlayer('sw');
                         time += diagDelta;
                         break;
+                    case "40":
+                        this.movePlayer('s');
+                        break;
                     case "NUMPAD2":
                         this.movePlayer('s');
                         break;
@@ -1206,8 +1230,14 @@ define('input/input',["require", "exports", "aurelia-framework", "../actor/playe
                         this.movePlayer('se');
                         time += diagDelta;
                         break;
+                    case "39":
+                        this.movePlayer('w');
+                        break;
                     case "NUMPAD4":
                         this.movePlayer('w');
+                        break;
+                    case "39":
+                        this.movePlayer('e');
                         break;
                     case "NUMPAD6":
                         this.movePlayer('e');
@@ -1215,6 +1245,9 @@ define('input/input',["require", "exports", "aurelia-framework", "../actor/playe
                     case "NUMPAD7":
                         this.movePlayer('nw');
                         time += diagDelta;
+                        break;
+                    case "39":
+                        this.movePlayer('n');
                         break;
                     case "NUMPAD8":
                         this.movePlayer('n');
@@ -1230,8 +1263,8 @@ define('input/input',["require", "exports", "aurelia-framework", "../actor/playe
         return Input;
     }());
     Input = __decorate([
-        aurelia_framework_1.inject(player_1.Player, aurelia_event_aggregator_1.EventAggregator),
-        __metadata("design:paramtypes", [Object, Object])
+        aurelia_framework_1.inject(player_1.Player, aurelia_event_aggregator_1.EventAggregator, ui_1.UI),
+        __metadata("design:paramtypes", [Object, Object, Object])
     ], Input);
     exports.Input = Input;
 });
@@ -1273,6 +1306,7 @@ define('camera',["require", "exports", "aurelia-framework", "./actor/player", ".
             this._eventAggregator.subscribe('PlayerMoved', function (event) {
                 _this.ui.deselectTiles();
                 _this.translate(event.position);
+                _this.updateViewport();
             });
             this._eventAggregator.subscribe('Update', function (playerPos) {
                 _this.updateViewport();
@@ -1302,7 +1336,6 @@ define('camera',["require", "exports", "aurelia-framework", "./actor/player", ".
         }
         Camera.prototype.translate = function (position) {
             this.position = position;
-            this.updateViewport();
         };
         Camera.prototype.setIsPlayer = function (tile) {
             var playerTile = this.world.getTileByWorldPosition(tile);
@@ -1351,6 +1384,13 @@ define('ui/ui',["require", "exports", "aurelia-framework", "aurelia-event-aggreg
         UI.prototype.selectTile = function (tile) {
             this.selectedTiles.push(tile);
         };
+        Object.defineProperty(UI.prototype, "isSelecting", {
+            get: function () {
+                return this.selectedTiles.length > 0;
+            },
+            enumerable: true,
+            configurable: true
+        });
         UI.prototype.deselectTiles = function () {
             this.selectedTiles.forEach(function (tile) {
                 tile.isSelected = false;
@@ -1395,19 +1435,10 @@ define('game',["require", "exports", "aurelia-framework", "./actor/player", "./i
             this.ui = ui;
         }
         Game.prototype.init = function () {
-            var _this = this;
             this.world.generateSeed(helpers_2.GenerateHashCode(this.seed));
             this.world.chunks = [];
-            var position = new helpers_1.Vector2(30000, 30000);
+            var position = new helpers_1.Vector2(10000, 100000);
             this.player.setPlayerPosition(position);
-            this.eventAggregator.subscribe("MouseMoved", function (event) {
-                var x = event.clientX;
-                var y = event.clientY;
-                var tileX = Math.floor(x / _this.camera.viewportSize.x);
-                var tileY = Math.floor(y / _this.camera.viewportSize.y);
-                var tile = _this.camera.viewport[tileY][tileX];
-                _this.eventAggregator.publish("TileInfo", tile);
-            });
         };
         return Game;
     }());

@@ -101,10 +101,12 @@ export class Random {
         max = max || 0;
         min = min || 0;
 
+        //this.seed = 192837463 ^ this.seed;
         this.seed = (this.seed * 9301 + 49297) % 233281;
+        //let rnd = (this.seed * 1664525 + 1013904223) % 4294967296
         let rnd = this.seed / 233280;
 
-        return min + rnd * (max - min);
+        return Math.abs(min + rnd  * (max - min));
     }
 
     // http://indiegamr.com/generate-repeatable-random-numbers-in-js/

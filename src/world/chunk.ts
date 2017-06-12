@@ -57,20 +57,20 @@ export class Chunk {
             bounds.bottomRight.y = chunkBounds.bottomRight.y
         if (bounds.bottomRight.x > chunkBounds.bottomRight.x)
             bounds.bottomRight.x = chunkBounds.bottomRight.x
-        
+
         let allInsideBounds = chunkBounds.isInsideBounds(bounds);
 
-        if(allInsideBounds)
+        if (allInsideBounds)
             return this.tiles;
 
         let startTile = this.getTileByWorldPosition(bounds.topLeft);
         let endTile = this.getTileByWorldPosition(bounds.bottomRight);
-        
+
         let tiles: Tile[][] = [];
-        for(let y = startTile.chunkIndex.y; y <= endTile.chunkIndex.y; y++) {
+        for (let y = startTile.chunkIndex.y; y <= endTile.chunkIndex.y; y++) {
             let yPos = y - startTile.chunkIndex.y;
             tiles[yPos] = [];
-            for(let x = startTile.chunkIndex.x; x <= endTile.chunkIndex.x; x++) {
+            for (let x = startTile.chunkIndex.x; x <= endTile.chunkIndex.x; x++) {
                 let xPos = x - startTile.chunkIndex.x;
                 tiles[yPos][xPos] = this.tiles[y][x];
             }
@@ -111,15 +111,15 @@ export class Chunk {
 
     getTileByWorldPosition(position: Vector2, chunkSize?: Vector2) {
         let size = chunkSize || this.chunkSize;
-        
-        let targetTileX =  Math.floor(Math.abs(position.x) % this.chunkSize.x);
+
+        let targetTileX = Math.floor(Math.abs(position.x) % this.chunkSize.x);
         let targetTileY = Math.floor(Math.abs(position.y) % this.chunkSize.y);
-        
-        if(Math.sign(position.x) == -1) {
+
+        if (Math.sign(position.x) == -1) {
             targetTileX = targetTileX ? this.chunkSize.x - Math.abs(targetTileX) : 0;
         }
 
-        if(Math.sign(position.y) == -1) {
+        if (Math.sign(position.y) == -1) {
             targetTileY = targetTileY ? this.chunkSize.y - Math.abs(targetTileY) : 0;
         }
 
@@ -129,16 +129,26 @@ export class Chunk {
     }
 
     generateTile(worldPosition: Vector2, chunkPosition: Vector2, weightMap: any[], chunkIndex: Vector2): Tile {
-        let perlinDivisor = 100;
+        
+        let perlinFrequency = .0075;
 
-        let tileWeight = Math.ceil(this.perlin.simplex2(worldPosition.x / perlinDivisor, worldPosition.y / perlinDivisor) * TileData.weightMod);
+        let perlinValue = this.perlin.simplex2(Math.abs(worldPosition.x * perlinFrequency), Math.abs(worldPosition.y * perlinFrequency)) * TileData.weightMod;
+        perlinValue += this.perlin.simplex2(Math.abs(worldPosition.x * (perlinFrequency * 2)), Math.abs(worldPosition.y * (perlinFrequency * 2))) * (TileData.weightMod / 10)
+        perlinValue += this.perlin.simplex2(Math.abs(worldPosition.x * (perlinFrequency * 8)), Math.abs(worldPosition.y * (perlinFrequency * 8))) * (TileData.weightMod / 20)
+        perlinValue += this.perlin.simplex2(Math.abs(worldPosition.x * (perlinFrequency * 14)), Math.abs(worldPosition.y * (perlinFrequency * 14))) * (TileData.weightMod / 40)
+        perlinValue += this.perlin.simplex2(Math.abs(worldPosition.x * (perlinFrequency * 20)), Math.abs(worldPosition.y * (perlinFrequency * 20))) * (TileData.weightMod / 80)
+
+        let tileWeight = perlinValue;
         let tileType = null;
 
         let maxLayer = 1000;
         let currentLayer = maxLayer;
         //TODO: This could be optimized
         let tileData;
-        let seed = Math.abs(GenerateHashCode('' + Math.floor(this.perlin.seedValue) * (parseInt('' + Math.abs(worldPosition.x * 5 + worldPosition.y * 3)) + tileWeight * 1000)));
+        let rndSeed = Math.abs((worldPosition.x * (chunkIndex.y + 1)) << 16 + (worldPosition.y * (chunkIndex.x + 1)) + this.perlin.seedValue);
+        let rnd = new Random(rndSeed);
+        //let seed = rnd.nextInt(0, this.perlin.seedValue) * 10
+        let seed = Math.abs(GenerateHashCode('' + Math.floor(this.perlin.seedValue) * (parseInt('' + rndSeed) + tileWeight * 1000)));
         tileData = weightMap.find(tile => {
             //tileweight falls in tile weight range
             if (((tile.weight.max >= tileWeight) || tile.weight.max == null)
@@ -147,8 +157,9 @@ export class Chunk {
                 if (tile.randomPercent != null && tile.randomPercent != 0) {
                     let show = true;
                     let rnd = new Random(seed);
-                    let num = rnd.nextInt(1, 100);
-                    show = num <= Math.abs(tile.randomPercent) * 100;
+                    let num = rnd.nextInt(1, 10000);
+                    let normalizedWeight = (2 - 1) / (tile.weight.max - tile.weight.min) * (tileWeight - tile.weight.min) + 1;
+                    show = num * normalizedWeight <= (Math.abs(tile.randomPercent)) * 10000;
                     //If we are not going to randomly show the tile then
                     //We need to go down to the NEXT layer, and not the next decrement of the same layer 
                     //(e.g. layer 2.1 is not showing, we need to go to Layer 0.* and not Layer 1.0)

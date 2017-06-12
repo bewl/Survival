@@ -39,22 +39,12 @@ export class Game {
     init() {
         this.world.generateSeed(GenerateHashCode(this.seed));
         this.world.chunks = [];
-        let position = new Vector2(30000, 30000);
+        let position = new Vector2(10000, 100000);
         //Vector2.zero();//new Vector2((this.world.chunkSize.x * this.maxWorldSize) / 2, (this.world.chunkSize.y * this.maxWorldSize) / 2);
         
         this.player.setPlayerPosition(position);
 
-        this.eventAggregator.subscribe("MouseMoved", (event) => {
-            let x = event.clientX;
-            let y = event.clientY;
-
-            let tileX = Math.floor(x / this.camera.viewportSize.x);
-            let tileY = Math.floor(y / this.camera.viewportSize.y);
-
-            let tile = this.camera.viewport[tileY][tileX];
-            
-            this.eventAggregator.publish("TileInfo", tile);
-        });
+        //this.camera.updateViewport();
     }
 
 }

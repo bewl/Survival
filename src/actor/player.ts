@@ -14,7 +14,7 @@ export class Player extends Actor {
     public world: World;
     public collisionEnabled: boolean = false;
     public eventAggregator: EventAggregator;
-    public inspectRadius: number = 2;
+    public inspectRadius: number = 1;
 
     constructor() {
         super();
