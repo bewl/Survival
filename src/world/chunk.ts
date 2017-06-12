@@ -155,11 +155,17 @@ export class Chunk {
                 && ((tile.weight.min <= tileWeight) || tile.weight.min == null)) {
                 //is this tile randomized to show?
                 if (tile.randomPercent != null && tile.randomPercent != 0) {
+                    let randomRange = 10000;
                     let show = true;
                     let rnd = new Random(seed);
-                    let num = rnd.nextInt(1, 10000);
-                    let normalizedWeight = (2 - 1) / (tile.weight.max - tile.weight.min) * (tileWeight - tile.weight.min) + 1;
-                    show = num * normalizedWeight <= (Math.abs(tile.randomPercent)) * 10000;
+                    let num = rnd.nextInt(1, randomRange);
+
+                    //we want the randomization to be more sparse the further away from max tileweight value, 
+                    //this makes it look a little more organic
+                    let maxMultiplier = 2;
+                    let minMultiplier = 1;
+                    let normalizedWeight = (maxMultiplier - minMultiplier) / (tile.weight.max - tile.weight.min) * (tileWeight - tile.weight.min) + minMultiplier;
+                    show = num * normalizedWeight <= (Math.abs(tile.randomPercent)) * randomRange;
                     //If we are not going to randomly show the tile then
                     //We need to go down to the NEXT layer, and not the next decrement of the same layer 
                     //(e.g. layer 2.1 is not showing, we need to go to Layer 0.* and not Layer 1.0)

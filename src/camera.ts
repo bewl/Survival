@@ -47,11 +47,9 @@ export class Camera {
             this.updateViewport();
         });
 
-       
-
         this._eventAggregator.subscribe('ZoomChanged', (dir: number) => {
             let minSize = 16;
-            let maxSize = 64;
+            let maxSize = 512;
             if (dir == 1) {
                 var x = Math.pow(2, this.zoomLevel - 1) / 2;
                 if (x >= minSize) {
