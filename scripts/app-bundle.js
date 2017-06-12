@@ -692,11 +692,14 @@ define('world/chunk',["require", "exports", "aurelia-framework", "../tile/tile",
                 if (((tile.weight.max >= tileWeight) || tile.weight.max == null)
                     && ((tile.weight.min <= tileWeight) || tile.weight.min == null)) {
                     if (tile.randomPercent != null && tile.randomPercent != 0) {
+                        var randomRange = 10000;
                         var show = true;
                         var rnd_1 = new helpers_1.Random(seed);
-                        var num = rnd_1.nextInt(1, 10000);
-                        var normalizedWeight = (3 - 1) / (tile.weight.max - tile.weight.min) * (tileWeight - tile.weight.min) + 1;
-                        show = num * normalizedWeight <= (Math.abs(tile.randomPercent)) * 10000;
+                        var num = rnd_1.nextInt(1, randomRange);
+                        var maxMultiplier = 2;
+                        var minMultiplier = 1;
+                        var normalizedWeight = (maxMultiplier - minMultiplier) / (tile.weight.max - tile.weight.min) * (tileWeight - tile.weight.min) + minMultiplier;
+                        show = num * normalizedWeight <= (Math.abs(tile.randomPercent)) * randomRange;
                         return show;
                     }
                     return true;
@@ -1314,7 +1317,7 @@ define('camera',["require", "exports", "aurelia-framework", "./actor/player", ".
             });
             this._eventAggregator.subscribe('ZoomChanged', function (dir) {
                 var minSize = 16;
-                var maxSize = 64;
+                var maxSize = 512;
                 if (dir == 1) {
                     var x = Math.pow(2, _this.zoomLevel - 1) / 2;
                     if (x >= minSize) {
@@ -1438,7 +1441,7 @@ define('game',["require", "exports", "aurelia-framework", "./actor/player", "./i
         Game.prototype.init = function () {
             this.world.generateSeed(helpers_2.GenerateHashCode(this.seed));
             this.world.chunks = [];
-            var position = new helpers_1.Vector2(10000, 100000);
+            var position = new helpers_1.Vector2(9636, 100130);
             this.player.setPlayerPosition(position);
         };
         return Game;
@@ -1678,6 +1681,7 @@ define('item/modules/hunting-knife',["require", "exports", "./knife", "aurelia-f
         HuntingKnife.prototype.use = function () {
             _super.prototype.use.call(this);
             this.player.health.damage("head", 5);
+            return true;
         };
         return HuntingKnife;
     }(knife_1.Knife));
